@@ -98,21 +98,28 @@ def main() -> dict:
                                           "측정_상한": (max(ok) if ok else None),
                                           "이론_상한": round(2 / float(np.max(np.linalg.eigvalsh(A))), 4)}
 
-    # 그림 4: 경로를 같은 축에 겹친다(미션 문장: "하나의 Figure에")
-    fig, axes = plt.subplots(1, 2, figsize=(9.6, 4.0))
-    for ax, (fname, A) in zip(axes, FUNCS.items()):
-        xs = np.linspace(-4, 4, 120)
-        ys = np.linspace(-3, 3, 100)
+    # 그림 4: 경로를 같은 축에 겹친다(미션 문장: "하나의 Figure에").
+    # 2×2 로 그리는 이유: 리포트가 주장하는 조건은 lr=0.15(원형은 수렴·타원은 발산/모멘텀 생존)인데
+    # lr=0.05 만 그림에 담으면 '무난한 경우'만 보여 주장과 그림이 어긋난다.
+    fig, axs = plt.subplots(2, 2, figsize=(9.4, 7.6))
+    for row, (fname, A) in enumerate(FUNCS.items()):
+        xs = np.linspace(-4, 4, 120); ys = np.linspace(-3, 3, 100)
         X, Y = np.meshgrid(xs, ys)
         Z = 0.5 * (A[0, 0] * X ** 2 + A[1, 1] * Y ** 2)
-        ax.contour(X, Y, Z, levels=np.logspace(-2, 3, 12), colors="0.75", linewidths=.7)
-        for oname, mk, style in [("vanilla", lambda lr: VanillaGD(lr), "--o"), ("momentum", lambda lr: Momentum(lr), "-s")]:
-            p = run(A, mk(0.05))
-            ax.plot(p[:, 0], p[:, 1], style, ms=2.6, lw=1.0, label=oname)
-        ax.plot(P0[0], P0[1], "k*", ms=11, label="시작점")
-        ax.set_title(f"{fname} (lr=0.05)")
-        ax.set_xlabel("x"); ax.set_ylabel("y"); ax.set_aspect("equal")
-        ax.legend(fontsize=7)
+        for col, lr in enumerate((0.05, 0.15)):
+            ax = axs[row][col]
+            ax.contour(X, Y, Z, levels=np.logspace(-2, 3, 12), colors="0.75", linewidths=.7)
+            for oname, mk, style in [("vanilla", VanillaGD, "--o"), ("momentum", Momentum, "-s")]:
+                path = run(A, mk(lr))
+                shown = path[np.isfinite(path).all(axis=1)]
+                shown = shown[np.abs(shown).max(axis=1) <= 6.0]     # 축 밖(발산)은 잘라내고 그린다
+                ax.plot(shown[:, 0], shown[:, 1], style, ms=2.4, lw=1.0, label=f"{oname} {len(shown)}/{len(path)}점")
+            ax.plot(P0[0], P0[1], "k*", ms=10, label="시작점")
+            van = next(r for r in rows if r["함수"] == fname and r["옵티"] == "vanilla" and r["lr"] == lr)
+            mom = next(r for r in rows if r["함수"] == fname and r["옵티"] == "momentum" and r["lr"] == lr)
+            ax.set_title(f"{fname} · lr={lr}\nvanilla {van['f_최종']}({van['판정']}) / "
+                         f"momentum {mom['f_최종']}({mom['판정']})", fontsize=8)
+            ax.set_xlabel("x"); ax.set_ylabel("y"); ax.set_aspect("equal"); ax.legend(fontsize=6)
     save(fig, "04_optimizer_paths.png")
 
     # 그림 5: lr 스윕 — 발산 경계를 함수별로 나란히
