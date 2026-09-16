@@ -22,13 +22,19 @@ def test_01_G1_notebook_손계산_vs_NumPy_4자():
     gate_record("G1")
 
 @needs()
-def test_02_G2_검사_자체의_항등식_여부를_표로_확인():
+def test_02_G4_계획_probe_값과_구현_실측이_다른_행을():
+    """[G4] 계획(probe) 값과 구현 실측이 다른 행을 표로 두고 원인을 한 줄씩 적는다 | 근거(학습기록 실측): """
+    from conftest import gate_record
+    gate_record("G4")
+
+@needs()
+def test_03_G2_검사_자체의_항등식_여부를_표로_확인():
     """[G2] 검사 자체의 항등식 여부를 표로 확인 | 근거(학습기록 실측): """
     from conftest import gate_record
     gate_record("G2")
 
 @needs()
-def test_03_G3_lr_스윕_수렴_발산_모멘텀_비교():
+def test_04_G3_lr_스윕_수렴_발산_모멘텀_비교():
     """[G3] lr 스윕 수렴/발산 + 모멘텀 비교 | 근거(학습기록 실측): """
     from conftest import gate_record
     gate_record("G3")

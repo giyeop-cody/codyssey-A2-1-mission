@@ -1,0 +1,44 @@
+{
+  "런": "A2-1 (AI 학습의 수학)",
+  "산출_그림": [
+    "01_linalg_transforms.png",
+    "02_svd_compare.png",
+    "03_gradient_contours.png",
+    "04_optimizer_paths.png",
+    "05_lr_sweep.png",
+    "06_normal_pdf.png",
+    "07_bernoulli_pmf.png"
+  ],
+  "요약": {
+    "det_면적비_최대오차": 1.33e-11,
+    "power_반복수": [
+      105,
+      19,
+      7
+    ],
+    "svd_k50_설명분산": 99.99,
+    "svd_k50_저장비율": 157.5,
+    "수치미분_x2_전구간_1e-4통과": true,
+    "등고선_직교_실측최대편차_deg": "0.8322",
+    "타원_lr0.15_vanilla": "6.428e+61",
+    "타원_lr0.15_momentum": "4.973e-03",
+    "backprop_손계산": [
+      -0.043979,
+      -0.0,
+      -0.051734,
+      -0.0
+    ],
+    "backprop_최대상대오차": "2.041e-10",
+    "MSE_MLE_차이": "0.000e+00",
+    "CE_MLE_차이": "0.000e+00"
+  },
+  "각_파일": {
+    "linear_algebra": "linear_algebra.json",
+    "power_iteration": "power_iteration.json",
+    "svd": "svd.json",
+    "calculus": "calculus.json",
+    "optimizer": "optimizer.json",
+    "backprop": "backprop.json",
+    "probability": "probability.json"
+  }
+}
