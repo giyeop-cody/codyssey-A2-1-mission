@@ -15,7 +15,7 @@
 | P5 probability_loss | 7h | PDF/PMF/softmax, MSE·CE=MLE 유도 | 유도 4줄 이상, 실측 logLik |
 | P6 README·정리 | 4h | 개요·실행법·결과요약 | 재현 테스트(클린 venv) |
 | P7 자가채점·수정 | 3h | check 스크립트 ALL PASS | 요구 5항목 × 검수표 |
-| 보너스 시간 과다 | P4 6h 초과 | Adam만 남기고 Newton·정보이론은 README "미수행 + 사유" |
+| 보너스 시간 과다 | P4 6h 초과 | Adam만 남기고 Newton·정보이론은 README "미수행 + 사유" | — |
 
 ## 2. 통과 게이트 — 이 숫자가 나오면 끝
 
@@ -42,7 +42,7 @@
 | A2-1-T10 | gradcheck로 자체 검증 | `test_gradcheck.py` | rel.err ≤1e-7(기대 8.6e-11 → 실측 **2.041e-10**) | 3 | T7 | ☑ |
 | A2-1-T11 | README·재현·자가채점 | README | 클린 venv 미실행(대신 **GitHub 클론 검증**으로 대체) + 검수표 47/47 | 4 | T10 | ◐ |
 
-## 4. 위험 · Plan B (studylog 04-plan에서)
+## 4. 위험 · Plan B (studylog 04-plan 의 원본 표를 그대로 옮긴 것)
 
 | 위험 | 대응 |
 |---|---|
