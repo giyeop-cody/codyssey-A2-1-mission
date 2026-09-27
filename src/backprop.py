@@ -37,14 +37,34 @@ def bce(yhat: float, y: float) -> float:
 
 
 def backward(y: float, x=X, W1=W1, B1=B1, W2=W2, B2=B2):
+    """원문 3-5 가 요구하는 6항(∂L/∂y_pred, ∂L/∂z2, ∂L/∂W2, ∂L/∂a1, ∂L/∂z1, ∂L/∂W1)을 **빠짐없이** 반환한다.
+
+    이전 버전은 dy_pred·da1 을 중간변수로만 쓰고 반환하지 않아, 노트북 룰표에서도 두 항이 빠져 있었다
+    (∂L/∂z₂ = ŷ−y 로 직행). 편향 기울기 db1·db2 도 함께 반환한다.
+    """
     z1, a1, z2, yhat = forward(x, W1, B1, W2, B2)
-    dz2 = yhat - y
+    dy_pred = -(y / yhat) + (1.0 - y) / (1.0 - yhat)   # ∂L/∂ŷ  (BCE 를 ŷ 로 직접 미분)
+    dz2 = dy_pred * yhat * (1.0 - yhat)                # = ŷ − y  (시그모이드+BCE 의 상쇄)
     dW2 = a1 * dz2
-    da1 = W2 * dz2
+    db2 = float(dz2)
+    da1 = W2 * dz2                                     # ∂L/∂a₁
     dz1 = da1 * a1 * (1 - a1)
     dW1 = np.outer(dz1, x)
+    db1 = dz1.copy()
     return {"z1": z1, "a1": a1, "z2": z2, "yhat": yhat, "L": bce(yhat, y),
-            "dz2": dz2, "dW2": dW2, "dz1": dz1, "dW1": dW1, "db1": dz1.copy(), "db2": float(dz2)}
+            "dy_pred": float(dy_pred), "dz2": dz2, "dW2": dW2, "da1": da1, "dz1": dz1,
+            "dW1": dW1, "db1": db1, "db2": db2}
+
+
+# 원문 3-5 필수 유도 6항 ↔ 이 구현의 키 ↔ shape (노트북 룰표와 같은 순서)
+REQUIRED_DERIVATIONS = [
+    ("∂L/∂y_pred", "dy_pred", "()", "-(y/ŷ) + (1-y)/(1-ŷ)"),
+    ("∂L/∂z2", "dz2", "()", "∂L/∂y_pred · ŷ(1-ŷ) = ŷ - y"),
+    ("∂L/∂W2", "dW2", "(2,)", "a1 · dz2"),
+    ("∂L/∂a1", "da1", "(2,)", "W2 · dz2"),
+    ("∂L/∂z1", "dz1", "(2,)", "∂L/∂a1 ⊙ a1(1-a1)"),
+    ("∂L/∂W1", "dW1", "(2,2)", "outer(dz1, x)"),
+]
 
 
 def numeric_grad(y: float):
@@ -97,7 +117,11 @@ def main() -> dict:
         worst_rel = max(v["상대오차(0이_아닌_항)"] for v in per_param.values())
         worst_abs = max(v["절대오차(전체)"] for v in per_param.values())
         per_y[str(y)] = {
-            "L": round(float(h["L"]), 6), "yhat": round(float(h["yhat"]), 6), "dz2": round(float(h["dz2"]), 6),
+            "L": round(float(h["L"]), 6), "yhat": round(float(h["yhat"]), 6),
+            "dy_pred(∂L/∂y_pred)": round(float(h["dy_pred"]), 6), "dz2": round(float(h["dz2"]), 6),
+            "da1(∂L/∂a₁)": [round(float(v), 6) for v in h["da1"]],
+            "dz1": [round(float(v), 6) for v in h["dz1"]],
+            "db1": [round(float(v), 6) for v in h["db1"]], "db2": round(float(h["db2"]), 6),
             "dW2": [round(float(v), 6) for v in h["dW2"]], "dW1": [round(float(v), 6) for v in h["dW1"].ravel()],
             "수치미분_dW1": [round(float(v), 6) for v in n["dW1"].ravel()],
             "오차표": {k: {kk: (f"{vv:.3e}" if isinstance(vv, float) else vv) for kk, vv in v.items()}
@@ -114,6 +138,14 @@ def main() -> dict:
                      "z1": [round(float(v), 6) for v in z1], "a1": [round(float(v), 6) for v in a1],
                      "z2": round(z2, 6), "yhat": round(yhat, 6)},
         "관례": "z1 = W1 @ x + b1 (열벡터 관례) → dW1 = outer(dz1, x). 뒤집은 관례(x @ W1)면 dW1 = outer(x, dz1) 로 전치된다",
+        "원문3-5_필수유도": {
+            "표": [{"항": s, "키": k, "shape": sh, "수식": f} for s, k, sh, f in REQUIRED_DERIVATIONS],
+            "y_true_별_값": {yy: {k: (round(float(hh[k]), 6) if np.ndim(hh[k]) == 0
+                                      else [round(float(v), 6) for v in np.ravel(hh[k])])
+                                  for _, k, _, _ in REQUIRED_DERIVATIONS}
+                             for yy, hh in hand.items()},
+            "판정": "원문 3-5 의 6항을 모두 반환·기록한다(이전 버전은 ∂L/∂y_pred·∂L/∂a₁ 이 중간변수라 리포트에 없었다)",
+        },
         "y_true_별": per_y,
         "y_true_미정의_대응": "미션 고정 예제는 y_true 를 적지 않았다 → 1.0/0.0 **양쪽** 손계산을 싣고, "
                               "리포트·노트북은 y_true=1.0 을 표준으로 삼는다(근거: 문서 01 결정 문단)",

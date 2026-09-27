@@ -3,8 +3,35 @@ import json
 import pathlib
 
 import matplotlib
-matplotlib.use("Agg")
+
+# 스크립트 실행(headless)에서는 Agg. **노트북 커널 안에서는 Agg 로 강제하지 않는다** —
+# 강제하면 InlineBackend 가 꺼져서 plt.show() 가 image/png 출력을 내지 않는다(감사 반영:
+# 이전 확률 노트북은 '분포 시각화' 요구를 텍스트 print 로만 대신했다).
+try:  # pragma: no cover
+    _ip = get_ipython()  # type: ignore[name-defined]  # noqa: F821
+except NameError:
+    _ip = None
+if _ip is None:
+    matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+
+
+def fig_to_png_bytes(fig) -> bytes:
+    """그림을 파일 없이 PNG 바이트로 뽑는다 — 노트북 출력에 그대로 embed 하는 데 쓴다.
+
+    바이트를 반환하는 이유: IPython.display.Image(data=…) 는 str 을 **파일 경로**로 해석한다
+    (base64 문자열을 넘기면 FileNotFoundError). 노트북에 그림을 남기려면 bytes 여야 한다.
+    """
+    import io
+    buf = io.BytesIO()
+    fig.savefig(buf, format="png", dpi=110, bbox_inches="tight")
+    plt.close(fig)
+    return buf.getvalue()
+
+
+def fig_to_png_b64(fig) -> str:
+    import base64
+    return base64.b64encode(fig_to_png_bytes(fig)).decode("ascii")
 import numpy as np
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]

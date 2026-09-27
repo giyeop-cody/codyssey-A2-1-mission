@@ -7,19 +7,35 @@
     "04_optimizer_paths.png",
     "05_lr_sweep.png",
     "06_normal_pdf.png",
-    "07_bernoulli_pmf.png"
+    "07_bernoulli_pmf.png",
+    "08_power_iteration.png"
   ],
   "요약": {
-    "det_면적비_최대오차": 1.33e-11,
+    "det_면적비_최대상대오차%": "1.333e-09",
+    "gate_원문1-4(면적비≤1%)": true,
     "power_반복수": [
       105,
       19,
       7
     ],
+    "power_이론예측_Rayleigh": [
+      132,
+      20,
+      6
+    ],
+    "gate_원문1-6(eig비교≤5%)": true,
     "svd_k50_설명분산": 99.99,
     "svd_k50_저장비율": 157.5,
-    "수치미분_x2_전구간_1e-4통과": true,
-    "등고선_직교_실측최대편차_deg": "0.8322",
+    "gate_원문1-7(그림k)": [
+      1,
+      10,
+      50,
+      100
+    ],
+    "gate_원문2-1(x=3,≤1e-4)": true,
+    "수치미분_x2_오차최대(전h)": "3.646e-08",
+    "등고선_직교_실측최대편차_deg(원문함수)": "0.1878",
+    "gate_원문4-2(반경≤0.1)": true,
     "타원_lr0.15_vanilla": "6.428e+61",
     "타원_lr0.15_momentum": "4.973e-03",
     "backprop_손계산": [
@@ -30,7 +46,12 @@
     ],
     "backprop_최대상대오차": "2.041e-10",
     "MSE_MLE_차이": "0.000e+00",
-    "CE_MLE_차이": "0.000e+00"
+    "CE_MLE_차이": "0.000e+00",
+    "gate_원문5-3(softmax합=1±1e-6)": true,
+    "베르누이PMF_합": {
+      "B(0.3)": 1.0,
+      "B(0.7)": 1.0
+    }
   },
   "각_파일": {
     "linear_algebra": "linear_algebra.json",

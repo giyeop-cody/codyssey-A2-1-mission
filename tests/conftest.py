@@ -20,13 +20,19 @@ def implemented() -> bool:
     return (ROOT / "reports" / "gates.json").exists() or any((ROOT / d).exists() for d in ("src", "figures", "notebooks"))
 
 
-def ensure_inputs():
-    """클론 직후·삭제된 상태에서도 테스트가 돌아가도록 파생 산출물을 만든다(autouse fixture 가 매 테스트 전에 호출).
+BOOTSTRAP = os.environ.get("MISSION_BOOTSTRAP") == "1"
 
-    교훈 2건:
-    - 산출물을 gitignore 하고 '존재 검사'만 하면 클론에서 tests 가 붉어진다(그래서 figures·reports 는 추적).
-    - bootstrap 을 test_self_check 안에만 두면 gate 테스트는 그걸 모른다(2026-09-16: 클론에서 4→5 failed).
-      그래서 **conftest 의 autouse** 로 둔다.
+
+def ensure_inputs():
+    """파생 산출물(reports·figures·notebooks)이 **없을 때만** 만든다.
+
+    감사(2026-09-27) 반영 — 이전엔 이 함수가 매 테스트 전에 run_all·record_gates 를 **항상** 돌렸다.
+    그러면 커밋된 산출물이 잘못돼도 테스트가 스스로 다시 만들어 통과해버린다(자가치유) → '커밋된 산출물의
+    정합성' 이라는 검증 대상이 사라진다. 그래서 기본 동작을 이렇게 바꾼다:
+    - reports/gates.json 이 있으면 **재생성하지 않는다**(커밋된 산출물을 그대로 검증한다).
+    - 없으면(클론 직후·삭제됨) 만든다 — 이전 교훈(산출물 gitignore + 존재검사만 하면 클론에서 tests 가 붉어진다,
+      bootstrap 을 test_self_check 안에만 두면 gate 테스트가 모른다)은 그대로 지킨다.
+    - `MISSION_BOOTSTRAP=1 pytest` 로 주면 항상 재생성한다(코드 수정 후 의도적으로 쓸 것).
     """
     have_data_gen = (ROOT / "src" / "data_gen.py").exists()
     have_run_all = (ROOT / "scripts" / "run_all.py").exists()
@@ -34,7 +40,10 @@ def ensure_inputs():
         return                                   # 미구현 레포: skip 판정은 needs() 가 한다
     figs_ok = (ROOT / "figures").exists() and any((ROOT / "figures").glob("*.png"))
     metrics_ok = (ROOT / "reports" / "metrics.json").exists()
-    if have_run_all and not (figs_ok and metrics_ok):
+    gates_ok = (ROOT / "reports" / "gates.json").exists()
+    if gates_ok and not BOOTSTRAP:
+        return                                   # 커밋된 산출물을 검증 대상으로 삼는다(재생성하지 않는다)
+    if have_run_all and (BOOTSTRAP or not (figs_ok and metrics_ok)):
         subprocess.run([sys.executable, "scripts/run_all.py"], cwd=ROOT, check=True,
                        capture_output=True, text=True)
     if have_data_gen:
@@ -51,7 +60,7 @@ def ensure_inputs():
     if not nb_ok and (ROOT / "scripts" / "build_notebook.py").exists():
         subprocess.run([sys.executable, "scripts/build_notebook.py"], cwd=ROOT, check=True,
                        capture_output=True, text=True)
-    if (ROOT / "scripts" / "record_gates.py").exists():
+    if (ROOT / "scripts" / "record_gates.py").exists() and (BOOTSTRAP or not gates_ok):
         subprocess.run([sys.executable, "scripts/record_gates.py"], cwd=ROOT, check=True,
                        capture_output=True, text=True)
 
