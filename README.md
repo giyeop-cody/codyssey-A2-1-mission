@@ -1,6 +1,24 @@
 <!-- hand-authored -->
 # A2-1 — AI 학습을 수학으로 직접 풀어보기 (제출물)
 
+
+<!-- codyssey-links:start -->
+## 🔗 Codyssey 연결
+
+| 항목 | 링크 |
+|---|---|
+| **과제** | **A2-1** — AI가 어떻게 학습하는지 수학으로 직접 풀어보기 · 심화(Advanced) 「AI/SW 심화」 · AI 수학 기초 · 60h |
+| 미션 원문 (정의서) | [`A2-1/a2-1-description.md`](https://github.com/giyeop-cody/codyssey-taskmap/blob/main/A2-1/a2-1-description.md) · [`A2-1-mission.jpg`](https://github.com/giyeop-cody/codyssey-taskmap/blob/main/A2-1/a2-1-mission.jpg) · [`meta.json`](https://github.com/giyeop-cody/codyssey-taskmap/blob/main/A2-1/meta.json) |
+| 이 과제 연결 카드 | [`A2-1/links.md`](https://github.com/giyeop-cody/codyssey-taskmap/blob/main/A2-1/links.md) |
+| 전체 연결 대장 | [`LINKS.md`](https://github.com/giyeop-cody/codyssey-taskmap/blob/main/LINKS.md) · 진행 현황 [`PROGRESS.md`](https://github.com/giyeop-cody/codyssey-taskmap/blob/main/PROGRESS.md) · [원문 API URL 41개](https://github.com/giyeop-cody/codyssey-taskmap/blob/main/codyssey-all-urls.md) |
+| 과정 허브 | [codyssey-A-studylog-hub](https://github.com/giyeop-cody/codyssey-A-studylog-hub) `missions/A2-1/` · `repos/A2-1/` 서브모듈 |
+| 통합 레포 | [codyssey](https://github.com/giyeop-cody/codyssey) → `A2-1/`(제출물) · `A2-1-studylog/`(학습기록) 서브모듈 |
+| A→M 연결 | [codyssey-AI-Applied](https://github.com/giyeop-cody/codyssey-AI-Applied) '다음 단계 (M 과정 연결)' |
+| 같은 과제의 다른 레포 | <sub>학습기록(스터디)</sub> [giyeop-cody/codyssey-A2-1-studylog](https://github.com/giyeop-cody/codyssey-A2-1-studylog) 🔒 |
+
+> 🔒 = 비공개 레포. 상태·pin 커밋은 연결 카드와 `PROGRESS.md` 에 있다. 이 표는 2026-09-27 기준이며 미션 원문 3종은 원본 데이터라 진행 상태를 쓰지 않는다.
+<!-- codyssey-links:end -->
+
 - 학습·계획·결정 기록: [codyssey-A2-1-studylog](https://github.com/giyeop-cody/codyssey-A2-1-studylog)
 - 이 미션의 일정·게이트: [`docs/learning-map.md`](docs/learning-map.md) · 확률 유도: [`docs/probability_loss.md`](docs/probability_loss.md) · 예제 정의: [`docs/y_true-definition.md`](docs/y_true-definition.md)
 - 과정 전체: [codyssey-A-studylog-hub](https://github.com/giyeop-cody/codyssey-A-studylog-hub)
