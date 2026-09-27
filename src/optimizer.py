@@ -9,8 +9,10 @@
    원 lr=0.01·0.99 는 부호 반전 없는 **단조 수렴 중**(정체)이다. → 발산 / 진동(좌표 부호반전 관측) / 정체 / 수렴 4분할.
 2. **원문 기준 열**을 추가한다: 원문 4-2 는 "lr=0.1, 100회 후 반경 0.1 이내"를 요구한다. 자체 기준(f<1e-8)은
    원문보다 훨씬 엄격하므로 두 기준을 나란히 싣는다.
-3. 모멘텀·Adam 의 이론 상한을 정정한다. 이 구현의 모멘텀은 **heavy-ball 변형**(v←βv+g, p←p−lr·v)이라
-   실효 학습률이 lr/(1−β)=10·lr 이다 → 상한은 2/λmax 가 아니라 **2(1−β)/λmax**.
+3. 모멘텀·Adam 의 이론 상한을 정정한다(2차 감사에서 재 정정). 이 구현의 모멘텀은 **heavy-ball 변형**(v←βv+g, p←p−lr·v)이고,
+   **발산 경계는 안정 한계 2(1+β)/λmax(H)**(원 1.9·타원 0.19 — 상태행렬 스펙트럼반경<1 ⇔ lr·λ<2(1+β), 실측 발산 경계와 일치)다.
+   실효 학습률 lr/(1−β)=10·lr 에서 나오는 2(1−β)/λmax(H)(원 0.1·타원 0.01)는 "GD 동급 수렴속도" 기준이지 발산 경계가 아니고,
+   초판의 2/λmax(H)(원 1.0·타원 0.1)는 둘 다 아니다.
 4. 원문 4-4 "lr≥0.5 에서 발산"은 **원(x²+y²)에서는 성립하지 않는다**(이론 상한 1.0) → 대조 표를 싣는다.
 """
 from __future__ import annotations
@@ -46,9 +48,14 @@ class VanillaGD:
 
 
 class Momentum:
-    """heavy-ball 변형: v ← βv + g, p ← p − lr·v  (Nesterov 아님). 정상상태 실효 학습률 ≈ lr/(1−β)."""
+    """heavy-ball 변형: v ← βv + g, p ← p − lr·v  (Nesterov 아님). 정상상태 실효 학습률 ≈ lr/(1−β).
+
+    두 상한을 구분한다(2차 감사 자기정정):
+    - 발산 경계 = **안정 한계** lr·λmax < 2(1+β): 좌표별 상태행렬 [[1−lr·λ, −lr·β],[λ, β]] 의 스펙트럼반경<1 조건.
+    - 실효 lr = lr/(1−β) 휴리스틱의 2(1−β)/λmax 는 "GD 동급 수렴속도" 상한이지 발산 경계가 아니다.
+    """
     name = "momentum"
-    upper = f"2(1−β)/λmax(H) (heavy-ball · 실효 lr≈lr/(1−β)={1 / (1 - BETA):g}·lr)"
+    upper = "2(1+β)/λmax(H) (heavy-ball 안정 한계)"
 
     def __init__(self, lr: float, beta: float = BETA):
         self.lr, self.beta, self.v = lr, beta, None
@@ -113,7 +120,7 @@ def verdict(f0: float, f1: float, path: np.ndarray) -> str:
 
 def main() -> dict:
     rows, paths = [], {}
-    factories = [("vanilla", VanillaGD, 2.0), ("momentum", Momentum, 2.0 * (1 - BETA)),
+    factories = [("vanilla", VanillaGD, 2.0), ("momentum", Momentum, 2.0 * (1 + BETA)),
                  ("adam(lr/10)", lambda lr: Adam(lr / 10.0), None)]
     for fname, A in FUNCS.items():
         hess_max = HESS[fname]
@@ -193,12 +200,13 @@ def main() -> dict:
             ax.semilogy(xs_, np.clip(ys_, 1e-16, None), "o-", ms=3.4, lw=.9, color=color, label=oname)
         hess_max = HESS[fname]
         for coef, ls, lab in [(2.0, ":", "2/λmax(H) (vanilla)"),
-                              (2.0 * (1 - BETA), "-.", "2(1−β)/λmax(H) (heavy-ball)")]:
+                              (2.0 * (1 + BETA), "-.", "2(1+β)/λmax(H) (heavy-ball 안정 한계)")]:
             up = coef / hess_max
             ax.axvline(up, ls=ls, c="k", lw=1.1)
             ax.text(up * 1.05, 1e5 if coef == 2.0 else 1e2, f"{lab}={up:.3g}", fontsize=6.5, rotation=90, va="bottom")
         ax.set_title(fname); ax.set_xlabel("learning rate"); ax.set_ylabel("|f| 최종(로그)")
         ax.grid(alpha=.25)
+        ax.set_xlim(0, 2.05)   # 원의 안정 한계 1.9 가 스윕 범위(최대 1.5) 너머라도 보이도록
     axes[0].legend(fontsize=7)
     save(fig, "05_lr_sweep.png")
 
@@ -228,7 +236,7 @@ def main() -> dict:
                         "(발산 아님), momentum lr=0.5 → "
                         f"{next(r['f_최종'] for r in rows if r['함수'].startswith('원') and r['옵티'] == 'momentum' and r['lr'] == 0.5)}. "
                         "이론 상한이 원은 1.0, 타원은 0.1 이므로 'lr≥0.5 발산'은 **타원에서만** 참이다. "
-                        "그림 05 의 두 점선(2/λmax, 2(1−β)/λmax)이 그 경계다")},
+                        "그림 05 의 두 점선(2/λmax, 2(1+β)/λmax)이 그 경계다")},
            "핵심_실측": {"타원_vanilla_lr0.15": v_tae[0]["f_최종"], "타원_momentum_lr0.15": m_tae[0]["f_최종"],
                         "원_vanilla_측정상한(자체기준)": conv["원: x^2 + y^2 / vanilla"]["측정_상한(자체기준)"],
                         "원_vanilla_측정상한(원문기준)": conv["원: x^2 + y^2 / vanilla"]["측정_상한(원문기준)"],
@@ -238,15 +246,20 @@ def main() -> dict:
                         "타원_이론상한": conv["타원: x^2 + 10y^2 / vanilla"]["이론_상한"],
                         "타원_momentum_이론상한": conv["타원: x^2 + 10y^2 / momentum"]["이론_상한"]},
            "이론_상한_정의": {"vanilla": "lr < 2/λmax(H) — 원(H=2I) 1.0, 타원(H=diag(2,20)) 0.1",
-                              "momentum(heavy-ball v←βv+g)": "lr < 2(1−β)/λmax(H) — 원 0.1, 타원 **0.01** "
-                                                              "(실효 lr = lr/(1−β) = 10·lr 이라 vanilla 의 1/10)",
+                              "momentum(heavy-ball v←βv+g)": "발산 경계 = 안정 한계 lr < 2(1+β)/λmax(H) — 원 **1.9**, 타원 **0.19** "
+                                                              "(실측: 타원 0.15 안정 → 0.2 발산, 경계 ∈(0.15,0.2] 로 일치). "
+                                                              "실효 lr = lr/(1−β) = 10·lr 휴리스틱의 2(1−β)/λmax(H) = 원 0.1·타원 0.01 은 "
+                                                              "'GD 동급 수렴속도' 상한(100회 내 f<1e-8 인 lr 이 없는 것과 정합)이지 발산 경계가 아니다",
                               "adam": "해석 상한 없음(적응형) — 측정만 싣는다",
-                              "주의": "이전 버전은 세 옵티마이저 모두에 2/λmax 를 적었다. 모멘텀 상한이 10배 느슨하게 "
-                                      "잘못 표기됐던 것(감사 지적) — 그리고 코드 안 λmax 가 eigvalsh(A)[-1]=2·λmax(H) 였다"},
+                              "주의": "초판은 세 옵티마이저 모두에 2/λmax 를 적었고(1차 감사 지적), 1차 정정은 모멘텀에 "
+                                      "실효lr 상한 2(1−β)/λmax 를 발산 경계로 잘못 넣었다 → '측정(원문기준) 1.5·0.15 > 이론 0.1·0.01' "
+                                      "모순이 생김. 2차 감사에서 상태행렬 스펙트럼반경으로 안정 한계 2(1+β)/λmax 를 유도해 재 정정했다. "
+                                      "그리고 코드 안 λmax 는 eigvalsh(A)[-1]=2·λmax(H) 였다 → 표기를 헤세 기준으로 통일"},
            "주의": (f"최종값은 {ITERS}회 반복 후이며 '수렴' 자체기준은 f<{F_CONV:g}(원문 기준은 반경 ≤{R_SPEC}). "
                     "기준을 바꾸면 상한이 같이 움직이므로 lr 단독 주장 금지(함수·기준·반복수를 함께 적는다). "
                     "'진동'은 좌표의 부호 반전이 관측된 경우에만 붙이고, 감소 중이나 기준 미달이면 '정체'로 쓴다. "
-                    "모멘텀은 heavy-ball 변형이라 실효 학습률이 lr/(1−β)=10·lr → 상한 공식이 vanilla 와 다르다"),
+                    "모멘텀은 heavy-ball 변형: 발산 경계는 안정 한계 2(1+β)/λmax(H)(원 1.9·타원 0.19)이고, "
+                    "실효 학습률 lr/(1−β)=10·lr 은 수렴속도 문제다(GD 동급 상한 2(1−β)/λmax=원 0.1·타원 0.01)"),
            "조건": f"시작점 {list(P0)}, 반복 {ITERS}, float64, 모멘텀 β={BETA}(heavy-ball), Adam lr=lr/10"}
     return write("optimizer.json", out)
 

@@ -72,10 +72,11 @@ def test_03_G3_원문42_반경_그리고_모멘텀_이점():
     assert van["판정"] == "발산", f"타원 lr=0.15 vanilla 가 발산해야 모멘텀과 대비된다: {van}"
     assert mom["원문4-2_기준(반경≤0.1)"], f"타원 lr=0.15 momentum 반경: {mom['반경_최종']}"
     assert mom["판정"] != "발산"
-    # 이론 상한: vanilla 는 2/λmax, heavy-ball 모멘텀은 2(1−β)/λmax 여야 한다(이전엔 둘 다 2/λmax 였다)
+    # 이론 상한: vanilla 는 2/λmax, heavy-ball 모멘텀의 발산 경계는 안정 한계 2(1+β)/λmax 여야 한다
+    # (초판은 둘 다 2/λmax, 1차 정정은 2(1−β)/λmax 로 잘못 넣었다 — 2차 감사 재 정정)
     ell = {k: v for k, v in op["수렴_상한"].items() if k.startswith("타원")}
     assert abs(ell["타원: x^2 + 10y^2 / vanilla"]["이론_상한"] - 0.1) < 1e-9
-    assert abs(ell["타원: x^2 + 10y^2 / momentum"]["이론_상한"] - 0.01) < 1e-9, ell["타원: x^2 + 10y^2 / momentum"]
+    assert abs(ell["타원: x^2 + 10y^2 / momentum"]["이론_상한"] - 0.19) < 1e-9, ell["타원: x^2 + 10y^2 / momentum"]
     for k, v in op["수렴_상한"].items():
         if v["측정_상한(자체기준)"] is not None and v["이론_상한"] is not None:
             assert v["측정_상한(자체기준)"] <= v["이론_상한"] + 1e-12, f"{k}: {v}"

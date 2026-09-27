@@ -114,8 +114,8 @@ def main() -> int:
         check("원문4-6 두 옵티마이저 경로를 하나의 Figure에 겹침",
               "plot" in (ROOT / "src" / "optimizer.py").read_text(encoding="utf-8")
               and (FIG / "04_optimizer_paths.png").exists(), spec=True)
-        check("모멘텀 이론상한이 heavy-ball 공식(2(1−β)/λmax)",
-              abs(op["수렴_상한"]["타원: x^2 + 10y^2 / momentum"]["이론_상한"] - 0.01) < 1e-9,
+        check("모멘텀 안정한계가 heavy-ball 공식(2(1+β)/λmax) — 2차 감사 재 정정",
+              abs(op["수렴_상한"]["타원: x^2 + 10y^2 / momentum"]["이론_상한"] - 0.19) < 1e-9,
               str(op["수렴_상한"]["타원: x^2 + 10y^2 / momentum"]), spec=True)
     # 5-1/5-2/5-3/5-4/5-5 확률
     if pr:
