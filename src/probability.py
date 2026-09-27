@@ -69,12 +69,15 @@ def main() -> dict:
     ax.set_xlabel("성공 횟수 k (시행 1회 → k∈{0,1})"); ax.set_ylabel("P(X=k)"); ax.legend(fontsize=7)
     save(fig, "07_bernoulli_pmf.png")
 
-    norm_rows = {label: {"mu": mu, "sigma": s,
-                         "peak": round(float(normal_pdf(mu, mu, s)), 6),
-                         "적분[-8,8]": round(float(np.trapezoid(normal_pdf(x, mu, s), x)), 6),
-                         "적분[-40,40]": round(float(np.trapezoid(normal_pdf(np.linspace(-40, 40, 80001), mu, s),
-                                                                             np.linspace(-40, 40, 80001))), 6)}
-                 for label, (mu, s) in NORMALS.items()}
+    xw = np.linspace(-40, 40, 80001)
+    norm_rows = {}
+    trunc = {}
+    for label, (mu, s) in NORMALS.items():
+        i8 = float(np.trapezoid(normal_pdf(x, mu, s), x))
+        i40 = float(np.trapezoid(normal_pdf(xw, mu, s), xw))
+        norm_rows[label] = {"mu": mu, "sigma": s, "peak": round(float(normal_pdf(mu, mu, s)), 6),
+                            "적분[-8,8]": round(i8, 6), "적분[-40,40]": round(i40, 6)}
+        trunc[label] = 1.0 - i8
     bern_rows = {label: {"PMF_k0_k1": [round(float(v), 6) for v in bernoulli_pmf(p)],
                          "합": round(float(bernoulli_pmf(p).sum()), 12),
                          "합-1_절대오차": f"{abs(float(bernoulli_pmf(p).sum()) - 1.0):.3e}"}
@@ -129,7 +132,9 @@ def main() -> dict:
     # ── softmax: 원문 5-3 (합 = 1.0 ± 1e-6) + 수치 안정성 ───────────────────────────────
     z = np.array([1.0, 2.0, 3.0])
     sum_cases = {}
-    with np.errstate(over="ignore"):
+    # over 뿐만 아니라 invalid 도 억누른다: inf/inf 에서 나는 RuntimeWarning 이 노트북 stderr 에
+    # **절대경로**를 남기면 클론 위치마다 산출물이 달라진다(재현성 훼손).
+    with np.errstate(over="ignore", invalid="ignore"):
         for label, zz in [("원본(1,2,3)", z), ("×1000", z * 1000.0), ("큰 음수(-500,0,500)", np.array([-500.0, 0.0, 500.0]))]:
             s = softmax(zz, stable=True)
             sum_cases[label] = {"출력": [round(float(v), 6) for v in s],
@@ -151,8 +156,11 @@ def main() -> dict:
                       "원문 5-3 의 '합=1 ±1e-6' 은 세 스케일 모두 통과(최대 오차 위 값)"}
 
     out = {"정규PDF(원문5-1)": norm_rows,
-           "넓이_주의": "적분 구간 [-8,8] 이 유한해 N(2,0.5) 는 거의 1 이지만 N(0,1) 도 잘림이 있다. "
-                        "'넓이=1'을 주장하려면 구간을 함께 적어야 한다(계수에는 잣대 원칙) — [-40,40] 열이 사실상 참값",
+           "넓이_주의": ("적분 구간 [-8,8] 이 유한하므로 잘림 1−∫ 를 재면 "
+                        + ", ".join(f"{k} {v:.2e}" for k, v in trunc.items())
+                        + " 로 둘 다 무시 가능(6자리 반올림에서 1.000000). 구간 의존성이 **보이는** 경우는 꼬리가 넓은 "
+                          "분포뿐이다(예: 이전 구현이 쓰던 σ=3 은 [-8,8] 에서 0.992338). '넓이=1'을 주장하려면 구간을 함께 "
+                          "적어야 한다(계수에는 잣대 원칙) — [-40,40] 열이 사실상 참값"),
            "베르누이PMF(원문5-2)": bern_rows,
            "베르누이PMF_정정_기록": {
                "이전_구현": "p^k (1-p)^(10-k), k=0..10 을 '베르누이 PMF' 라벨로 그림",

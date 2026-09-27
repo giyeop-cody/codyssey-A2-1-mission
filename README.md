@@ -44,8 +44,8 @@ MISSION_BOOTSTRAP=1 python -m pytest -q  # 코드 수정 후: 산출물을 재�
 |---|---|---|
 | 손역전파 vs 수치미분 | ŷ=**0.647292** · L=**0.434958** · ∂L/∂y_pred=**−1.544899** · ∂L/∂z₂=**−0.352708** · ∂L/∂a₁=[−0.176354, −0.211625] · ∂L/∂W₁=[−0.043979, 0, −0.051734, 0] · 최대상대오차(0 제외) **2.041e-10** | `reports/backprop.json` |
 | y_true 미정의 대응 | y=1.0 과 0.0 **양쪽** 손계산(같은 ŷ 에서 L 0.434958 vs 1.042114) | 〃 · `docs/y_true-definition.md` |
-| det = 면적배 (원문 1-4, ≤1%) | 최대 상대오차 **1.333e-07%** · 통과. 단 det=1 인 3행은 검사가 **항등식** → 축비 **4.0** 을 **별도 열**로 대체 | `reports/linear_algebra.json` |
-| power iteration (원문 1-6, `np.linalg.eig` 비교 ≤5%) | λ₂/λ₁ 0.9/0.5/0.1 → 반복 **105 / 19 / 7** · eig 비교 최대상대오차 **4.0e-10%** · 이론 예측(Rayleigh 기준 `ln tol/ln r²`) **132/20/6** | `reports/power_iteration.json` · `figures/08` |
+| det = 면적배 (원문 1-4, ≤1%) | 최대 상대오차 **1.333e-09%** · 통과. 단 det=1 인 3행은 검사가 **항등식** → 축비 **4.0** 을 **별도 열**로 대체 | `reports/linear_algebra.json` |
+| power iteration (원문 1-6, `np.linalg.eig` 비교 ≤5%) | λ₂/λ₁ 0.9/0.5/0.1 → 반복 **105 / 19 / 7** · eig 비교 최대상대오차 **4.016e-10%** · 이론 예측(Rayleigh 기준 `ln tol/ln r²`) **132/20/6** | `reports/power_iteration.json` · `figures/08` |
 | 직교 초기벡터 케이스 | **실패 사례로 기록** — λ_max(100) 대신 λ₂(**90.0**) 반환, 상대오차 10% | 〃 |
 | SVD 압축 (원문 1-7, k=10·50·100) | 설명분산 99.53/99.99/100% 이나 저장비율 **31.5/157.5/201.6%** · k=100 은 랭크 상한(64) 때문에 k=64 와 동일 | `reports/svd.json` · `figures/02` |
 | 수치미분 (원문 2-1: **x=3**, 해석값 6, ≤1e-4) | x² 오차 최대 **3.646e-08** → 통과. 그러나 f'''=0 이라 **모든 h 에서 통과** → 요구 조건이 검증이 아님. x³·sin 은 실패로 갈린다(최적 h 1e-5/1e-5) | `reports/calculus.json` |
@@ -173,5 +173,5 @@ src/        _common(출력·폰트·그림검사) · linear_algebra · power_ite
 scripts/    run_all(파이프라인+analysis.md) · build_notebook(실행해서 저장) · record_gates · check_requirements
 tests/      test_gates(게이트+값 재판정) · test_math(불변량) · test_gradcheck · test_self_check · test_repo_shape
 notebooks/  backprop_derivation · probability_loss(그림 3장 embed)
-reports/    *.json 8종 + analysis.md   figures/ 01~08   docs/ learning-map · probability_loss · y_true-definition
+reports/    *.json 9종(모듈 7+metrics+gates) + analysis.md   figures/ 01~08   docs/ learning-map · probability_loss · y_true-definition
 ```

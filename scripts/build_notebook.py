@@ -161,10 +161,26 @@ def probability_nb():
     code(nb, "z = np.array([1.,2.,3.])\n"
              "print(json.dumps(d['softmax']['합=1_검증(원문5-3)'], ensure_ascii=False, indent=1))\n"
              "print('gate 합=1 ±1e-6:', d['softmax']['gate_합=1_±1e-6'], '· 최대 오차', d['softmax']['최대_합-1_절대오차'])\n"
-             "with np.errstate(over='ignore'):\n"
+             "with np.errstate(over='ignore', invalid='ignore'):\n"
              "    print('원본 차이', np.max(np.abs(P.softmax(z,False)-P.softmax(z,True))))\n"
              "    print('×1000 naive', P.softmax(z*1000,False), '\\n×1000 safe  ', P.softmax(z*1000,True))")
     return nb
+
+
+def stabilize(nb) -> None:
+    """재빌드해도 바이트가 같도록 두 가지를 고정한다(재현성 주장의 최소 조건).
+
+    1. 셀 id — nbformat 기본값은 무작위라 재빌드마다 diff 가 난다 → (순서+내용) 해시로.
+    2. 출력 metadata 의 실행 시각(iopub.execute_input 등) — 커밋된 노트북에 매번 새 타임스탬프가 박힌다 → 제거.
+    (PNG 바이트와 execution_count 는 결정론적이라 그대로 둔다.)
+    """
+    import hashlib
+    for i, c in enumerate(nb.cells):
+        src = "".join(c.get("source", [])) if isinstance(c.get("source"), list) else c.get("source", "")
+        c["id"] = hashlib.sha1(f"{i}:{c['cell_type']}:{src}".encode("utf-8")).hexdigest()[:12]
+        c.get("metadata", {}).pop("execution", None)   # 셀 단위 실행 시각(타임스탬프) 제거
+        for o in c.get("outputs", []):
+            o["metadata"] = {}
 
 
 def main() -> None:
@@ -176,6 +192,7 @@ def main() -> None:
         # 커널 cwd 를 레포 루트로 둔다(그래야 src·reports 가 한 경로로 잡힌다)
         NotebookClient(nb, timeout=300, kernel_name="python3",
                        resources={"metadata": {"path": str(ROOT)}}).execute()
+        stabilize(nb)
         nbf.write(nb, out / name)
         exec_out = sum(1 for c in nb.cells if c.cell_type == "code" and c.get("outputs"))
         imgs = sum(1 for c in nb.cells if c.cell_type == "code"
