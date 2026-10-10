@@ -43,7 +43,31 @@ def main() -> int:
     src_la = (ROOT / "src" / "linear_algebra.py").read_text(encoding="utf-8") if (ROOT / "src" / "linear_algebra.py").exists() else ""
     check("원문1-2 S(2,0.5) 가 그림 대상 행렬에 있다", "diag_scale(2.0, 0.5)" in src_la and "SPEC_SCALE" in src_la,
           "MATRICES 에 S(2,0.5) 가 있어야 그림에 나온다", spec=True)
+    # 원문 §2-1: 세 기능이 **src/linear_algebra.py 한 파일**에 있어야 한다(2026-10-11 재검증에서 미일치 발견 → 신설)
+    import ast
+    def defs(path):
+        if not path.exists():
+            return {}
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        return {n.name: ast.unparse(n) for n in tree.body if isinstance(n, (ast.FunctionDef, ast.ClassDef))}
+    la_defs = defs(ROOT / "src" / "linear_algebra.py")
+    check("원문§2-1 linear_algebra.py 에 변환 시각화 함수(plot_transform)", "plot_transform" in la_defs
+          and ".plot(" in la_defs.get("plot_transform", ""), spec=True)
+    check("원문§2-1 linear_algebra.py 에 power_iteration(λ·고유벡터 반환)", "power_iteration" in la_defs
+          and "return (new, v, k" in la_defs.get("power_iteration", ""), spec=True)
+    check("원문§2-1 linear_algebra.py 에 SVD 압축·복원 함수", {"svd_compress", "svd_reconstruct"} <= set(la_defs), spec=True)
+    check("원문1-1/1-2/1-3 개별 그림 01a·01b·01c", all((FIG / f).exists() for f in
+          ("01a_rotation.png", "01b_scaling.png", "01c_shear.png")), spec=True)
+    try:
+        import matplotlib.image as _mi
+        _img = _mi.imread(ROOT / "assets" / "grace_hopper_64.png")
+        img_ok = _img.ndim == 2 and max(_img.shape) <= 64
+    except Exception as e:  # noqa: BLE001
+        img_ok, _img = False, e
+    check("원문 가이드: SVD 이미지가 64×64 이하 Grayscale 공개 이미지", img_ok, "assets/grace_hopper_64.png", spec=True)
     if la:
+        check("원문1-4 독립 추정(격자 세기)도 ≤1%", all(r.get("gate_격자세기(≤1%)") for r in la["표"][:4]),
+              la["gate_원문1-4"].get("격자세기_최대_상대오차%", ""), spec=True)
         check("원문1-4 면적비 vs |det| 상대오차 ≤1%", bool(la["gate_원문1-4"]["통과"]),
               f"최대 {la['gate_원문1-4']['최대_상대오차%']}%", spec=True)
         check("원문1-4 축비 값이 '면적비' 열에 섞이지 않았다",
@@ -53,8 +77,9 @@ def main() -> int:
     if pi:
         check("원문1-6 np.linalg.eig 비교·오차 ≤5%", bool(pi["gate_원문1-6"]["통과"]),
               f"최대 {pi['gate_원문1-6']['최대_상대오차%']}%", spec=True)
-        check("원문1-6 비교 함수가 eig 다", "np.linalg.eig(" in (ROOT / "src" / "power_iteration.py").read_text(encoding="utf-8"),
-              spec=True)
+        check("원문1-6 비교 함수가 eig 다", "np.linalg.eig(" in src_la, spec=True)
+        check("원문 제출물1 '대응 고유벡터'도 eig 와 일치(|cos|≥1−1e-9)",
+              float(pi["gate_원문1-6"]["고유벡터_최소|cos|"]) >= 1 - 1e-9, pi["gate_원문1-6"]["고유벡터_최소|cos|"], spec=True)
         check("원문1-5/1-6 power iteration 시각화 그림 존재", (FIG / "08_power_iteration.png").exists(), spec=True)
         check("power 이론 공식이 수렴 기준(Rayleigh)과 같다",
               all(0.5 <= r["반복수"] / max(r["이론_예측반복_Rayleigh"], 1) <= 2.0 for r in pi["표"][:3]),
@@ -78,11 +103,14 @@ def main() -> int:
         perp = ca["직교성"]["원문: f = x^2 + y^2"]
         check("원문2-4 직교 편차 ≤1° (실측)", float(perp["실측_최대편차_deg"]) <= 1.0 and perp["표본수"] > 100,
               f"최대 {perp['실측_최대편차_deg']}° / {perp['표본수']}점", spec=True)
-        check("원문2-3 Gradient 시각화 함수가 있다",
-              "gradient_visualization" in (ROOT / "src" / "calculus.py").read_text(encoding="utf-8")
-              and "quiver" in (ROOT / "src" / "calculus.py").read_text(encoding="utf-8"), spec=True)
+        ca_defs = defs(ROOT / "src" / "calculus.py")
+        check("원문2-3 Gradient 시각화 함수가 실제로 화살표를 그린다(함수 본문에 quiver)",
+              "quiver" in ca_defs.get("gradient_visualization", "") and "numerical_gradient" in ca_defs, spec=True)
+        check("원문2-3 화살표가 등고선 **위**에 있다(화살표 위치의 f 값 = 등고선 레벨 범위)",
+              perp.get("화살표_개수(등고선 위)", 0) >= 12 and
+              perp.get("화살표_위치_f값_범위", [0, 0])[0] >= 0.49, str(perp.get("화살표_위치_f값_범위")), spec=True)
         check("원문2-2~2-4 그림 03 존재", (FIG / "03_gradient_contours.png").exists(), spec=True)
-    # 3-4/3-5/3-8 역전파
+    # 3-4/3-5/3-6/3-7 역전파
     if bp:
         check("원문3-4 순전파 중간값 z1·a1·z2·y_pred 기록",
               all(k in bp["고정예제"] for k in ("z1", "a1", "z2", "yhat")), str(list(bp["고정예제"])), spec=True)
@@ -96,9 +124,15 @@ def main() -> int:
         nb_txt = nb_bp.read_text(encoding="utf-8") if nb_bp.exists() else ""
         check("원문3-5 노트북에도 6항이 있다",
               all(s in nb_txt for s in ("∂L/∂y_pred", "∂L/∂z₂", "∂L/∂W₂", "∂L/∂a₁", "∂L/∂z₁", "∂L/∂W₁")), spec=True)
-        check("원문3-8 손계산 ↔ NumPy 4자리 일치",
-              all(bp["y_true_별"][y]["gate_4자리일치"] for y in ("1.0", "0.0")), spec=True)
-        check("원문3-7 shape 표기가 노트북에 있다", "(2,2)" in nb_txt and "(2,)" in nb_txt, spec=True)
+        # 2026-10-11 정정: 이전 이 항목은 'NumPy 해석기울기 vs 수치미분'(gradcheck)을 '손계산 vs NumPy'라는 이름으로 셌다
+        check("gradcheck: 해석 기울기 ↔ 수치미분 4자리 일치(자체 대조)",
+              all(bp["y_true_별"][y]["gate_4자리일치"] for y in ("1.0", "0.0")))
+        check("원문3-7 **손계산 값** ↔ 노트북 NumPy 4자리 일치(노트북 실행 출력)",
+              "원문 3-7 (y_true=1) 손계산 = NumPy (소수 4자리): True" in nb_txt
+              and "y_true=0 손계산 = NumPy (소수 4자리): True" in nb_txt, spec=True)
+        check("원문3-2 출력층→입력층 단계별 유도(시그모이드 미분·연쇄 법칙 식)가 노트북 마크다운에 있다",
+              all(k in nb_txt for k in ("연쇄 법칙", "\\\\sigma'(z)", "\\\\delta_1 x^{\\\\top}")), spec=True)
+        check("원문3-6 shape 표기가 노트북에 있다", "(2,2)" in nb_txt and "(2,)" in nb_txt, spec=True)
     # 4-2/4-4/4-6/4-7 최적화
     if op:
         check("원문4-2 lr=0.1·100회 → 반경 ≤0.1", bool(op["gate_원문4-2"]["gate_원문4-2"]),
@@ -111,6 +145,15 @@ def main() -> int:
               next(r for r in op["표"] if r["함수"].startswith("타원") and r["옵티"] == "vanilla" and r["lr"] == 0.15)["판정"] == "발산"
               and next(r for r in op["표"] if r["함수"].startswith("타원") and r["옵티"] == "momentum" and r["lr"] == 0.15)["판정"] != "발산"
               and (FIG / "04_optimizer_paths.png").exists(), spec=True)
+        check("원문4-2/4-3 lr=0.1 경로가 그림 04 에 있다(이전 그림엔 없었다)",
+              "PATH_LRS = (0.01, 0.1, 0.15)" in (ROOT / "src" / "optimizer.py").read_text(encoding="utf-8"), spec=True)
+        check("원문4-3 vanilla 점선이 momentum 에 가려지지 않는다(위 레이어)",
+              '"vanilla", VanillaGD, ":o", dict(zorder=4' in (ROOT / "src" / "optimizer.py").read_text(encoding="utf-8"), spec=True)
+        check("원문4-4 lr≥0.5 거동을 그래프로(그림 09)", (FIG / "09_lr_divergence.png").exists(), spec=True)
+        sp_ = op.get("모멘텀_이점_정량(f<1e-6 도달 반복수)", {}).get("타원: x^2 + 10y^2", {})
+        check("원문4-7 타원에서 모멘텀 이점이 반복수로 정량화(최적 momentum < 최적 vanilla)",
+              bool(sp_) and sp_["momentum_최적"]["반복수"] < sp_["vanilla_최적"]["반복수"],
+              str({k: sp_.get(k, {}).get("반복수") for k in ("vanilla_최적", "momentum_최적")}), spec=True)
         check("원문4-6 두 옵티마이저 경로를 하나의 Figure에 겹침",
               "plot" in (ROOT / "src" / "optimizer.py").read_text(encoding="utf-8")
               and (FIG / "04_optimizer_paths.png").exists(), spec=True)
@@ -137,9 +180,14 @@ def main() -> int:
         check("원문 제출물5 노트북에 분포 시각화(이미지 출력)가 있다",
               '"image/png"' in nbp and "N(2,0.5)" in nbp and "B(0.3)" in nbp,
               "노트북 안에서 plt.show() 로 그린 그림이 outputs 에 박혀 있어야 한다", spec=True)
-        check("원문5-4/5-5 MSE=MLE·CE=MLE 유도(노트북·문서)",
-              float(pr["MSE_MLE_동치"]["차이"]) == 0.0 and float(pr["CE_MLE_동치"]["차이"]) == 0.0
-              and ("MSE" in nbp or "MLE" in nbp), spec=True)
+        check("원문5-4/5-5 MSE=MLE·CE=MLE 수치 동치",
+              float(pr["MSE_MLE_동치"]["차이"]) == 0.0 and float(pr["CE_MLE_동치"]["차이"]) == 0.0, spec=True)
+        # 2026-10-11: 이전 검사는 노트북에 'MSE' 또는 'MLE' 라는 단어만 있으면 통과였다 → 유도 식 자체를 확인
+        check("원문5-4 MSE=MLE **수식 유도**가 노트북 마크다운에 있다",
+              all(k in nbp for k in ("N(0, \\\\sigma^2)", "\\\\log\\\\mathcal L(\\\\theta)", "MSE")), spec=True)
+        check("원문5-5 CE=MLE 유도: 베르누이 + **카테고리** 둘 다 노트북에",
+              all(k in nbp for k in ("Bernoulli", "카테고리", "softmax", "y_{i,c}")) and "일치(격자 0.001): True" in nbp, spec=True)
+        check("N(2,0.5) 표기 해석(σ vs σ²)을 밝혔다", "σ² = 0.5" in nbp and "표기 주의" in nbp, spec=True)
 
     # ══ [자체] 이 레포가 세운 기준 (검사의 유효성·문서 형태) ═════════════════════════
     check("src/linear_algebra.py 존재", (ROOT / "src" / "linear_algebra.py").exists())
@@ -147,8 +195,8 @@ def main() -> int:
         rows = la["표"]
         check("det·면적비 표 4행↑", len(rows) >= 4, f"{len(rows)}행")
         check("면적비 오차 ≤1e-9", max(float(r["절대오차"]) for r in rows if "면적비(실측)" in r) <= 1e-9)
-        check("'무의미' 검사 여부를 표가 스스로 표시", any(r["검사가무의미"] for r in rows),
-              f"항등식 행 {sum(1 for r in rows if r['검사가무의미'])}개")
+        check("det=1 행의 구분력 한계를 표가 스스로 표시", any(r["무변환버그_구분력없음(det=1)"] for r in rows),
+              f"det=1 행 {sum(1 for r in rows if r['무변환버그_구분력없음(det=1)'])}개")
         check("det=1 행에 대안 검사(축비)가 있다", any("축비(실측)" in r for r in rows))
     if pi:
         its = [r["반복수"] for r in pi["표"][:3]]
@@ -217,7 +265,20 @@ def main() -> int:
         txt = f.read_text(encoding="utf-8") if f.exists() else ""
         check(f"{nb_name} 존재·실행결과·'{need}'", f.exists() and '"outputs"' in txt and need in txt,
               "" if f.exists() else "파일 없음")
+    # 그림 '내용' 최소 검사 — 2026-10-11: 05_lr_sweep.png 가 세로로 1:1.8 늘어나 곡선이 안 보이는 상태로 커밋돼 있었는데
+    # 기존 검사는 파일 존재만 봤다. 깨진 레이아웃의 전형(텍스트가 데이터 좌표 밖 → bbox_inches='tight' 로 캔버스 팽창)을 잡는다.
+    import matplotlib.image as _mi2
+    bad = []
+    for f in sorted(FIG.glob("*.png")):
+        h_, w_ = _mi2.imread(f).shape[:2]
+        if not (0.15 <= h_ / w_ <= 1.3):
+            bad.append(f"{f.name} {w_}×{h_}")
+    check("그림 레이아웃 정상(세로/가로 0.15~1.3)", not bad, "; ".join(bad))
+    reqs = (ROOT / "requirements.txt").read_text(encoding="utf-8") if (ROOT / "requirements.txt").exists() else ""
+    check("requirements.txt 로 노트북까지 재현(nbformat·nbclient·ipykernel)",
+          all(k in reqs for k in ("nbformat", "nbclient", "ipykernel")), reqs.replace("\n", " "))
     readme = (ROOT / "README.md").read_text(encoding="utf-8") if (ROOT / "README.md").exists() else ""
+    check("README 에 프로젝트 개요 섹션", "## 프로젝트 개요" in readme)
     check("README '요약' 섹션", "주요 결과 요약" in readme)
     check("README 에 5조항 검수표", readme.count("검증") >= 3 and "요구" in readme)
     check("README 에 갭 표", "갭" in readme)

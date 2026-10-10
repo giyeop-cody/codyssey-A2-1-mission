@@ -15,18 +15,14 @@ import backprop  # noqa: E402
 import calculus  # noqa: E402
 import linear_algebra  # noqa: E402
 import optimizer  # noqa: E402
-import power_iteration  # noqa: E402
 import probability  # noqa: E402
-import svd_compress  # noqa: E402
 
 REP = ROOT / "reports"
 
 
 def main() -> None:
     parts = {
-        "linear_algebra": linear_algebra.main(),
-        "power_iteration": power_iteration.main(),
-        "svd": svd_compress.main(),
+        **linear_algebra.main(),           # 원문 제출물 1: 변환·det / power iteration / SVD 가 한 모듈(2026-10-11 통합)
         "calculus": calculus.main(),
         "optimizer": optimizer.main(),
         "backprop": backprop.main(),
@@ -65,37 +61,35 @@ def main() -> None:
           "모든 숫자는 `reports/*.json`(같은 실행의 산출물) 에서 복사됐다. 손으로 고치면 다음 실행에서 사라진다.",
           "각 절의 `gate_원문…` 은 **미션 원문 조항**을 직접 판정한 것이고, 그 외 검사는 이 레포가 세운 자체 기준이다.", "",
           "## 1. 선형대수: det = 면적배 인가", "",
-          "| 행렬 | det | 면적비(실측) | 축비(실측) | 절대오차 | 상대오차% | 원문 1-4(≤1%) | 이 검사 무의미? |",
-          "|---|---|---|---|---|---|---|---|"]
+          "| 행렬 | det | 면적비(다각형 100점) | 상대오차% | 격자 세기 면적비(독립) | 격자 상대오차% | 축비 | 원문 1-4(≤1%) | 무변환 버그와 구분? |",
+          "|---|---|---|---|---|---|---|---|---|"]
     for r in la["표"]:
-        md.append(f"| {r['행렬']} | {r['det']} | {r['면적비(실측)']} | {r.get('축비(실측)', '—')} | {r['절대오차']} | "
-                  f"{r['상대오차%']} | {r['gate_원문1-4(≤1%)']} | "
-                  f"{'**예** (det=1 → 항등식)' if r['검사가무의미'] else '아니오'} |")
-    md += ["", f"그림: `figures/01_linalg_transforms.png` — 원문 1-1(회전)·1-2(**S(2,0.5)**)·1-3(전단) 을 "
-               f"하나의 Figure(서브플롯 4)에 싣고, 각 축에서 변환 전후를 겹쳤다. 마지막 축은 det≠1 대조(스케일 3,0.5). "
-               f"S(2,0.5) 는 det=1 이라 면적비가 1.0 으로 '통과'하지만 **정보가 없다** → 축비 {la['표'][-1].get('축비(실측)')} 로 "
-               "모양 변화를 따로 잰다(축비는 별도 열에 둔다 — 면적비 열에 섞지 않는다).", "",
+        md.append(f"| {r['행렬']} | {r['det']} | {r['면적비(실측)']} | {r['상대오차%']} | "
+                  f"{r.get('격자세기_면적비(독립)', '—')} | {r.get('격자세기_상대오차%', '—')} | {r.get('축비(실측)', '—')} | "
+                  f"{r['gate_원문1-4(≤1%)']} | {'**불가** (det=1)' if r['무변환버그_구분력없음(det=1)'] else '가능'} |")
+    md += ["", "그림: `figures/01a_rotation.png`·`01b_scaling.png`·`01c_shear.png`(원문 1-1/1-2/1-3 개별) + "
+               "`figures/01_linalg_transforms.png`(det≠1 대조 포함 요약). 단위 원(100점)·meshgrid 격자점·기저벡터 e₁,e₂ 의 "
+               "변환 전후를 각 축에 겹쳤다 — 원은 회전해도 원이라 기저벡터 화살표가 회전을 보여 준다.", "",
            f"> {la['판정']}", "",
            f"> 원문 1-4 게이트: {json.dumps(la['gate_원문1-4'], ensure_ascii=False)}", "",
            "## 2. power iteration: 수렴 속도는 λ2/λ1", "",
-           "| 케이스 | λ 실측 | λ 참값(eig) | 상대오차%(vs eig) | 원문 1-6(≤5%) | 반복수 | 이론 예측(Rayleigh) | 판정 |",
-           "|---|---|---|---|---|---|---|---|"]
+           "| 케이스 | λ 실측 | λ 참값(eig) | 상대오차%(vs eig) | 원문 1-6(≤5%) | 고유벡터 각도차° | 반복수 | 이론 예측 | 판정 |",
+           "|---|---|---|---|---|---|---|---|---|"]
     for r in pi["표"]:
         md.append(f"| {r['case']} | {r['λ_실측']} | {r['λ_참값_eig']} | {r['상대오차%(vs eig)']} | "
-                  f"{r['gate_원문1-6(≤5%)']} | {r['반복수']} | {r['이론_예측반복_Rayleigh']} | {r['판정'][:60]} |")
+                  f"{r['gate_원문1-6(≤5%)']} | {r.get('고유벡터_각도차_deg', '—')} | {r['반복수']} | {r['이론_예측반복_Rayleigh']} | {r['판정'][:70]} |")
     md += ["", f"그림: `figures/08_power_iteration.png` — Rayleigh quotient 상대오차의 수렴 곡선(r=0.9/0.5/0.1)과 "
                "실측 정지점·이론 예측 횟수(원문 1-5/1-6 의 시각화 요구).", "",
            f"> {pi['판정']}", "",
            f"> 원문 1-6 게이트: {json.dumps(pi['gate_원문1-6'], ensure_ascii=False)}", "",
            "## 3. SVD 압축: k=50 은 압축이 아니다", "",
-           "| k | 실제 랭크 | mse | PSNR dB | 저장비율% | 설명분산% | 비고 |", "|---|---|---|---|---|---|---|"]
+           "| k | 실제 랭크 | mse | PSNR dB | 저장비율% | 설명분산% | Frobenius 실측 | Eckart–Young 예측 | 비고 |", "|---|---|---|---|---|---|---|---|---|"]
     for r in sv["표"]:
         md.append(f"| {r['k']} | {r['실제 랭크']} | {r['mse']} | {r['psnr_dB']} | {r['저장비율_%']} | "
-                  f"{r['설명분산_%']} | {r['k_요청_대비_랭크_상한']} |")
-    md += ["", f"그림: `figures/02_svd_compare.png` — 원문 1-7 이 요구한 **k=10·50·100**(+ 대조 k=1) 을 하나의 Figure에. "
-               f"k=100 은 64×64 의 랭크 상한(64) 때문에 k=64 와 같은 그림이 되며 제목에 적는다. "
-               f"k=50 은 눈으로 구별이 어려운데 저장량은 원본의 "
-               f"{[r for r in sv['표'] if r['k'] == 50][0]['저장비율_%']}% 로 **늘어난다**.", "",
+                  f"{r['설명분산_%']} | {r['Frobenius오차_실측']} | {r['Frobenius오차_Eckart-Young']} | {r['k_요청_대비_랭크_상한']} |")
+    md += ["", "그림: `figures/02_svd_compare.png` — 원본(64×64 공개 이미지 `assets/grace_hopper_64.png`)과 원문 1-7 의 "
+               "**k=10·50·100** 복원을 한 Figure에. k=100 은 랭크 상한(64) 때문에 k=64 와 같은 완전 복원이며 제목에 적는다. "
+               "`figures/02b_svd_spectrum.png` 는 특이값 스펙트럼.", "",
            f"> {sv['판정']}", "",
            f"> 원문 1-7 게이트: {json.dumps(sv['gate_원문1-7'], ensure_ascii=False)}", "",
            "## 4. 수치미분: x^2 에서 ≤1e-4 검사는 항등식", "",
@@ -119,9 +113,9 @@ def main() -> None:
            f"그라디언트 시각화 함수(원문 제출물 2): {json.dumps(ca['그라디언트_시각화'], ensure_ascii=False)}", "",
            "그림: `figures/03_gradient_contours.png`(등고선+그라디언트 화살표 — 원문 함수와 타원 대조를 "
            "**하나의 Figure**에 서브플롯 2개로), `figures/04_optimizer_paths.png`(두 옵티마이저 경로를 같은 축에), "
-           "`figures/05_lr_sweep.png`(함수별 상한 점선 2종). '하나의 Figure에 겹쳐' 요구 4건 중 "
-           "**01(축 4)·02(축 4)·03(축 2)·05(축 2)는 서브플롯**이고, 같은 축에 진짜로 겹친 것은 04(경로)와 06(PDF)·08(곡선)이다 "
-           "→ 이 차이는 README 갭 표에도 적는다.", "",
+           "`figures/05_lr_sweep.png`(함수별 상한 점선 2종), `figures/09_lr_divergence.png`(원문 4-4: lr≥0.5 거동), "
+           "`figures/10_momentum_speed.png`(목표 도달 반복수). 원문이 '겹쳐' 를 요구한 항목 — 변환 전후(1-1), 두 옵티마이저 경로(4-6), "
+           "두 PDF(5-1) — 은 각 축 안에서 겹쳤다. 01·03·04 는 여러 조건을 서브플롯으로 나란히 둔 것이다.", "",
            "## 5. 최적화: lr 상한은 조건수에서 나온다", "",
            "| 케이스 | 측정 상한(자체 f<1e-8) | 측정 상한(원문 반경≤0.1) | 이론 상한 | 공식 |", "|---|---|---|---|---|"]
     for k, v in op["수렴_상한"].items():
@@ -135,11 +129,21 @@ def main() -> None:
     for r in op["원문4-4_대조(lr≥0.5 발산)"]["표"]:
         md.append(f"| {r['lr']} | {r['원_vanilla']} | {r['원_momentum']} | {r['타원_vanilla']} | {r['타원_momentum']} |")
     md += ["", f"> {op['원문4-4_대조(lr≥0.5 발산)']['판정']}", "",
+           "### 모멘텀의 이점 — f<1e-6 도달 반복수 (그림 10)", "",
+           "| 함수 | κ | vanilla 최적(lr→반복) | momentum 최적(β, lr→반복) | lr=0.01 vanilla / momentum(β=0.9) |", "|---|---|---|---|---|"]
+    for fname, v in op["모멘텀_이점_정량(f<1e-6 도달 반복수)"].items():
+        i01 = v["lr"].index(0.01)
+        md.append(f"| {fname} | {v['κ(조건수)']:g} | lr={v['vanilla_최적']['lr']} → {v['vanilla_최적']['반복수']}회 | "
+                  f"β={v['momentum_최적']['β']}, lr={v['momentum_최적']['lr']} → {v['momentum_최적']['반복수']}회 | "
+                  f"{v['vanilla_반복수'][i01]} / {v['momentum(β=0.9)_반복수'][i01]} |")
+    md += ["", f"> {op['모멘텀_이점_판정']}", "",
            "반복수를 늘리면 판정이 바뀌는 구간이 있다(아래는 momentum 이 1000회에서 수렴):", "",
            "| 함수 | lr | vanilla 100 | momentum 100 | vanilla 1000 | momentum 1000 |", "|---|---|---|---|---|---|"]
     for r in op["반복수_민감도"]:
         md.append(f"| {r['함수']} | {r['lr']} | {r['van_100']} | {r['mom_100']} | {r['van_1000']} | {r['mom_1000']} |")
     md += ["", "## 6. 역전파: 손계산 = NumPy = 수치미분 (4자리)", "",
+           "- 손계산(소수 6자리 반올림 진행)·단계별 유도·노트북 내 독립 NumPy 구현의 4자리 대조는 "
+           "`notebooks/backprop_derivation.ipynb` §3~§5 에 있다(13항 전부 ✓). 아래는 src/backprop.py 의 값과 gradcheck.",
            f"- 관례: {bp['관례']}",
            "- 원문 3-5 필수 유도 6항: " + json.dumps([r["항"] for r in bp["원문3-5_필수유도"]["표"]], ensure_ascii=False)
            + f" → {bp['원문3-5_필수유도']['판정']}",
@@ -151,7 +155,7 @@ def main() -> None:
         md.append(f"- **y_true={y}**: L={v['L']}, ŷ={v['yhat']}, ∂L/∂y_pred={v['dy_pred(∂L/∂y_pred)']}, "
                   f"∂L/∂z₂={v['dz2']}, ∂L/∂a₁={v['da1(∂L/∂a₁)']}, ∂L/∂b₁={v['db1']}, ∂L/∂b₂={v['db2']}, "
                   f"∂L/∂W₁={v['dW1']}, 최대상대오차(0 제외)={v['최대상대오차_0제외']}, "
-                  f"gate ≤1e-7: {v['gate_1e-7']} / 4자리 일치: {v['gate_4자리일치']}")
+                  f"gate ≤1e-7: {v['gate_1e-7']} / gradcheck 4자리 일치: {v['gate_4자리일치']}")
     md += ["", f"- {bp['y_true_미정의_대응']}", f"- {bp['기울기_0_열']['해석']}"
                   f" (0인 열 {bp['기울기_0_열']['개수']}개)", "",
            "## 7. 손실 = 최대우도", "",

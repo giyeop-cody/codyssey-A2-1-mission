@@ -32,13 +32,19 @@ X_EXTRA = 1.0         # 이전 구현이 쓰던 지점 — 민감도 대조로�
 
 # 원문 2-2 가 지정한 등고선 함수, 그리고 민감도 대조용 타원
 CONTOURS = {
-    "원문: f = x^2 + y^2": (lambda x, y: x * x + y * y, (-2.0, 2.0, 220), (-2.0, 2.0, 220), [2.0, 4.0, 6.0]),
-    "추가(타원): f = x^2 + 4y^2": (lambda x, y: x * x + 4.0 * y * y, (-2.0, 2.0, 220), (-1.6, 1.6, 180), [2.0, 6.0, 10.0]),
+    "원문: f = x^2 + y^2": (lambda x, y: x * x + y * y, (-2.0, 2.0, 220), (-2.0, 2.0, 220), [0.5, 1.5, 3.0]),
+    "추가(타원): f = x^2 + 4y^2": (lambda x, y: x * x + 4.0 * y * y, (-2.0, 2.0, 220), (-1.6, 1.6, 180), [1.0, 2.0, 3.5]),
 }
 SPEC_KEY = "원문: f = x^2 + y^2"
 
 
 def central_diff(f, x: float, h: float) -> float:
+    """중심차분 f'(x) ≈ (f(x+h) − f(x−h)) / 2h.
+
+    테일러 전개 f(x±h) = f ± h·f′ + h²/2·f″ ± h³/6·f‴ + ... 를 빼면 짝수차 항이 지워져
+    절단오차 = h²/6 · f‴(ξ) (O(h²)). 반올림오차 ≈ ε·|f|/h 이므로 총오차는 h ≈ (3ε|f|/|f‴|)^(1/3) 근처에서 최소.
+    f=x² 이면 f‴=0 → 절단오차가 0 이라 원문 2-1 의 ≤1e-4 는 어떤 h 에서도 통과한다(검사력 없음).
+    """
     return float((f(x + h) - f(x - h)) / (2.0 * h))
 
 
@@ -60,25 +66,66 @@ def error_table(x: float) -> list[dict]:
     return rows
 
 
-def gradient_visualization(x: float = X_SPEC, h: float = 1e-5) -> dict:
-    """원문 제출물 2 의 'Gradient 시각화 함수': ∇f(x) 를 수치미분으로 구해 (값, 화살표 좌표) 로 반환한다.
+def numerical_gradient(f, p, h: float = 1e-5) -> np.ndarray:
+    """다변수 수치 그라디언트(중심차분): ∂f/∂x_i ≈ (f(p + h e_i) − f(p − h e_i)) / 2h.  p: (n,) → (n,)."""
+    p = np.asarray(p, dtype=float)
+    g = np.zeros_like(p)
+    for i in range(p.size):
+        e = np.zeros_like(p); e[i] = h
+        g[i] = (f(*(p + e)) - f(*(p - e))) / (2.0 * h)
+    return g
 
-    그림은 perpendicularity() 가 등고선 위에 quiver 로 얹는다(요구 2-3).
+
+def gradient_visualization(f, levels, xr=(-2.0, 2.0, 220), yr=(-2.0, 2.0, 220), spacing: float = 0.42,
+                           ax=None, h: float = 1e-5):
+    """원문 제출물 2 의 'Gradient 시각화 함수': 등고선을 그리고 **등고선 위의 점**에서 ∇f 화살표를 그린다.
+
+    - 화살표 위치: matplotlib 이 그린 각 등고선 곡선 위에서 호 길이 spacing 간격의 점(원문 2-3 "등고선 위 여러 점").
+      (등고선은 그림 영역 안에 닫히도록 levels 를 고른다 — 영역 밖으로 잘린 조각에 화살표가 몰리는 것을 피한다)
+    - 화살표 방향: numerical_gradient(중심차분) — 해석식이 아니라 이 모듈의 수치미분으로 구한다.
+    - quiver(angles='xy', scale_units='xy') + set_aspect('equal') → 화면상의 각도가 데이터 각도와 같다
+      (aspect 가 같지 않으면 직교가 그림에서 비뚤어져 보인다).
+    반환: (ax, 화살표 위치 (m,2), 그라디언트 (m,2), 등고선 객체)
+
+    2026-10-11 정정: 이전 같은 이름의 함수는 1변수 x² 의 미분값 하나를 dict 로 돌려줄 뿐 **아무것도 그리지 않았고**,
+    화살표는 별도 코드에서 np.gradient(격자 차분)로 격자점마다 찍었다(등고선 위가 아님).
     """
-    f = FUNCS["x^2"][0]
-    g = central_diff(f, x, h)
-    return {"x": x, "h": h, "∇f(x)": round(g, 6), "해석값": round(float(FUNCS["x^2"][1](x)), 6),
-            "화살표_표기": f"({x:g}, {f(x):g}) 에서 기울기 {g:g}"}
+    if ax is None:
+        _, ax = plt.subplots(figsize=(4.6, 4.6))
+    gx = np.linspace(*xr); gy = np.linspace(*yr)
+    X, Y = np.meshgrid(gx, gy)
+    cs = ax.contour(X, Y, f(X, Y), levels=levels, cmap="viridis")
+    pts = []
+    for segs in cs.allsegs:
+        for path in segs:
+            if len(path) < 12:
+                continue
+            d = np.r_[0.0, np.cumsum(np.hypot(*np.diff(path, axis=0).T))]
+            for t in np.arange(0.0, d[-1] - 0.5 * spacing, spacing):
+                pts.append([np.interp(t, d, path[:, 0]), np.interp(t, d, path[:, 1])])
+    P = np.array(pts)
+    G = np.array([numerical_gradient(f, p, h) for p in P])
+    span = max(xr[1] - xr[0], yr[1] - yr[0])
+    Gs = G / np.linalg.norm(G, axis=1, keepdims=True).max() * span * 0.12       # 길이는 |∇f| 에 비례(최댓값 정규화)
+    ax.quiver(P[:, 0], P[:, 1], Gs[:, 0], Gs[:, 1], angles="xy", scale_units="xy", scale=1.0,
+              color="#c0392b", width=0.006, zorder=3)
+    ax.plot(P[:, 0], P[:, 1], "k.", ms=3, zorder=4)
+    ax.set_aspect("equal"); ax.set_xlabel("x"); ax.set_ylabel("y")
+    return ax, P, G, cs
 
 
 def _perp_one(f, xr, yr, levels):
+    ax_draw = plt.gca()
     gx = np.linspace(*xr); gy = np.linspace(*yr)
     X, Y = np.meshgrid(gx, gy)
     Z = f(X, Y)
-    cs = plt.gca().contour(X, Y, Z, levels=levels)
+    _tmpfig, _tmpax = plt.subplots()
+    cs = _tmpax.contour(X, Y, Z, levels=levels)       # 측정용(보이지 않는 축) — 표시는 gradient_visualization
+    plt.close(_tmpfig)
     devs_real, devs_taut = [], []
     singular = 0
-    for path in cs.allsegs[0]:
+    # 2026-10-11 정정: 이전에는 cs.allsegs[0](첫 등고선 1개)만 쟀다 → 그린 등고선 전부를 잰다
+    for path in (pp for segs in cs.allsegs for pp in segs):
         if len(path) < 12:
             continue
         step = path[1:] - path[:-1]
@@ -101,17 +148,17 @@ def _perp_one(f, xr, yr, levels):
         taut = np.stack([-G[:, 1], G[:, 0]], axis=1)
         taut = taut / np.linalg.norm(taut, axis=1, keepdims=True)
         devs_taut.append(np.degrees(np.arccos(np.clip(np.abs(np.einsum("ij,ij->i", Gn, taut)), 0, 1))) - 90.0)
-    # 요구 2-3: 등고선 위 여러 점에서 Gradient 화살표
-    Gy_g, Gx_g = np.gradient(Z, gy[1] - gy[0], gx[1] - gx[0])
-    plt.gca().quiver(X[::24, ::24], Y[::24, ::24], Gx_g[::24, ::24], Gy_g[::24, ::24],
-                     color="#c0392b", scale=40, width=0.006)
+    # 요구 2-3: 등고선 **위의** 여러 점에서 Gradient 화살표 (gradient_visualization 이 그린다)
+    _, P_arrow, G_arrow, cs_drawn = gradient_visualization(f, levels, xr, yr, ax=ax_draw)
     real = np.concatenate(devs_real) if devs_real else np.zeros(1)
     taut = np.concatenate(devs_taut) if devs_taut else np.zeros(1)
     return {"표본수": int(len(real)),
             "실측_최대편차_deg": f"{float(np.max(np.abs(real))):.4f}",
             "실측_중위편차_deg": f"{float(np.median(np.abs(real))):.4f}",
             "유도_최대편차_deg": f"{float(np.max(np.abs(taut))):.3e}",
-            "특이점(∇f=0)_제외개수": singular}, cs
+            "특이점(∇f=0)_제외개수": singular,
+            "화살표_개수(등고선 위)": int(len(P_arrow)),
+            "화살표_위치_f값_범위": [round(float(min(f(*p) for p in P_arrow)), 4), round(float(max(f(*p) for p in P_arrow)), 4)]}, cs_drawn
 
 
 def perpendicularity():
@@ -141,7 +188,14 @@ def main() -> dict:
     rows = error_table(X_SPEC)
     rows_extra = error_table(X_EXTRA)
     perp = perpendicularity()
-    gv = gradient_visualization()
+    # 그라디언트 시각화 함수의 수치 요약: 원문 함수 x²+y² 의 몇 점에서 수치 ∇f 와 해석 ∇f=(2x,2y) 비교
+    f_spec = CONTOURS[SPEC_KEY][0]
+    probe = np.array([[1.0, 1.0], [-1.2, 0.5], [0.3, -1.9], [3.0, 0.0]])
+    gnum = np.array([numerical_gradient(f_spec, q) for q in probe])
+    gv = {"함수": "f(x,y)=x²+y²", "점": probe.tolist(), "수치_∇f": np.round(gnum, 8).tolist(),
+          "해석_∇f=(2x,2y)": (2 * probe).tolist(),
+          "최대_절대오차": f"{float(np.max(np.abs(gnum - 2 * probe))):.3e}",
+          "그림": "figures/03_gradient_contours.png (화살표 = numerical_gradient, 위치 = 등고선 위 등간격 점)"}
     x2 = [r for r in rows if r["함수"] == "x^2"][0]
     spec, extra = perp[SPEC_KEY], perp["추가(타원): f = x^2 + 4y^2"]
     out = {"표": rows,
@@ -158,7 +212,7 @@ def main() -> dict:
                     f"(타원 x²+4y² 는 {extra['실측_최대편차_deg']}° — 격자·곡률에 따라 편차가 커진다)"),
            "조건": (f"수치미분: f=f(x) 는 **x={X_SPEC:g}**(원문 지정, 해석값 6) · 중심차분 · float64 · "
                     f"h 1e-1..1e-8 (8종). 대조로 x={X_EXTRA:g} 도 싣는다. "
-                    "등고선: matplotlib contour(levels=[2,4,6] for x²+y², [2,6,10] for 타원) · 원문 함수 x²+y² 는 220×220 격자(x,y ∈ [-2,2]), "
+                    "등고선: matplotlib contour(levels=[0.5,1.5,3] for x²+y², [1,2,3.5] for 타원 — 영역 안에서 닫히는 값, 2026-10-11 변경) · 원문 함수 x²+y² 는 220×220 격자(x,y ∈ [-2,2]), "
                     "타원 x²+4y² 는 220×180(x ∈ [-2,2], y ∈ [-1.6,1.6])")}
     return write("calculus.json", out)
 

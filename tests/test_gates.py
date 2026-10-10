@@ -20,7 +20,7 @@ def metric(name):
 
 @needs()
 def test_01_G1_손계산_vs_NumPy_4자리_그리고_원문35_필수6항():
-    """[G1] 원문 3-4/3-5/3-8: 손계산 ↔ NumPy ↔ 수치미분 4자리 일치 + 필수 유도 6항 기록."""
+    """[G1] 원문 3-4/3-5/3-6/3-7: 손계산 ↔ NumPy ↔ 수치미분 4자리 일치 + 필수 유도 6항 기록."""
     from conftest import gate_record
     gate_record("G1")
     bp = metric("backprop.json")

@@ -21,20 +21,26 @@ bp, ca, op = j("backprop.json"), j("calculus.json"), j("optimizer.json")
 pi, sv, la, pr = j("power_iteration.json"), j("svd.json"), j("linear_algebra.json"), j("probability.json")
 gates = {}
 
-# ── G1: 원문 3-4/3-5/3-8 손계산 ↔ NumPy ↔ 수치미분 ─────────────────────────────
+# ── G1: 원문 3-4/3-5/3-6/3-7 손계산 ↔ NumPy ↔ 수치미분 ─────────────────────────────
 if bp is None:
     gates["G1"] = {"value": "reports/backprop.json 없음 → 미실행", "pass": False, "how": "python scripts/run_all.py"}
 else:
     a, b = bp["y_true_별"]["1.0"], bp["y_true_별"]["0.0"]
     req_keys = [r["키"] for r in bp["원문3-5_필수유도"]["표"]]
     have = all(k in bp["원문3-5_필수유도"]["y_true_별_값"]["1.0"] for k in req_keys)
+    _nbp = ROOT / "notebooks" / "backprop_derivation.ipynb"
+    _nbt = _nbp.read_text(encoding="utf-8") if _nbp.exists() else ""
+    nb_hand = ("원문 3-7 (y_true=1) 손계산 = NumPy (소수 4자리): True" in _nbt
+               and "y_true=0 손계산 = NumPy (소수 4자리): True" in _nbt)
     gates["G1"] = {
         "value": (f"ŷ={bp['고정예제']['yhat']} · y=1: L={a['L']}, ∂L/∂y_pred={a['dy_pred(∂L/∂y_pred)']}, "
                   f"∂L/∂z₂={a['dz2']}, ∂L/∂a₁={a['da1(∂L/∂a₁)']}, ∂L/∂W₁={a['dW1']} "
                   f"(수치미분 최대상대오차 {a['최대상대오차_0제외']}) / y=0: L={b['L']}, ∂L/∂z₂={b['dz2']} · "
                   f"원문 3-5 필수 6항 기록={have}({req_keys})"),
-        "pass": bool(a["gate_4자리일치"] and b["gate_4자리일치"] and a["gate_1e-7"] and b["gate_1e-7"] and have),
-        "how": "src/backprop.py:main() — 손계산 vs 독립 수치미분(격자 h=1e-5), 0인 항은 절대오차로 판정"}
+        "pass": bool(a["gate_4자리일치"] and b["gate_4자리일치"] and a["gate_1e-7"] and b["gate_1e-7"] and have and nb_hand),
+        "how": ("src/backprop.py:main() — 해석 기울기 vs 독립 수치미분(h=1e-5), 0인 항은 절대오차로 판정 + "
+                "notebooks/backprop_derivation.ipynb 실행 출력에서 원문 3-7 손계산(6자리) ↔ NumPy 4자리 일치(y=1·y=0) 확인. "
+                "(2026-10-11 정정: 이전엔 gradcheck 만으로 '손계산↔NumPy'를 판정했다)")}
 
 # ── G2: 원문 2-1(x=3, 해석값 6, ≤1e-4) · 2-2(등고선 x²+y²) · 2-4(직교) ──────────
 if ca is None:

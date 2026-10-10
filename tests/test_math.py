@@ -26,7 +26,9 @@ def test_det_area_ratio_실측과_부합():
     area_rows = [r for r in la["표"] if "면적비(실측)" in r]
     worst = max(float(r["절대오차"]) for r in area_rows)
     assert worst <= 1e-9, f"면적비 vs |det| 오차 {worst:.2e} > 1e-9"
-    assert any(r["검사가무의미"] for r in la["표"]), "det=1 행렬의 항등식 여부를 표가 표시해야 한다"
+    assert any(r["무변환버그_구분력없음(det=1)"] for r in la["표"]), "det=1 행이 '변환 미적용' 버그를 못 잡는다는 사실을 표가 표시해야 한다"
+    # 면적비는 신발끈 공식이라 어떤 M 에서도 |det| 와 같다(항등식) → 독립 추정(격자 세기)이 ≤1% 여야 의미가 있다
+    assert all(r["gate_격자세기(≤1%)"] for r in la["표"][:4])
     # 축비 값은 '면적비' 열에 섞이면 안 된다(열 이름 = 측정 정의)
     assert all(abs(float(r["면적비(실측)"]) - abs(float(r["det"]))) <= 1e-9 for r in area_rows), \
         "면적비 열에 면적비가 아닌 값(축비 등)이 들어 있다"
@@ -42,8 +44,9 @@ def test_power_iteration_단조():
     # 원문 1-6: 비교 대상은 np.linalg.eig, 오차 ≤5%
     assert all(float(r["상대오차%(vs eig)"]) <= 5 for r in pi["표"][:3])
     assert all(r["gate_원문1-6(≤5%)"] for r in pi["표"][:3])
-    assert all(abs(r["λ_참값_eig"] - r["λ_참값_eigvalsh"]) <= 1e-6 for r in pi["표"]), \
-        "대칭행렬에서 eig 와 eigvalsh 가 다르면 어딘가 틀린 것이다"
+    # 제출물1 '최대 고유값과 대응 고유벡터' — 벡터도 eig 와 같은 방향이어야 한다(수렴 케이스)
+    assert all(float(r["고유벡터_|cos|(vs eig)"]) >= 1 - 1e-9 for r in pi["표"][:3]), \
+        "고유벡터가 eig 의 고유벡터와 다른 방향이다"
     # 이론 예측은 실제 수렴 기준(Rayleigh 변화)과 같은 양이어야 한다 → 실측과 자릿수가 맞아야 한다
     for r in pi["표"][:3]:
         assert 0.5 <= r["반복수"] / max(r["이론_예측반복_Rayleigh"], 1) <= 2.0, \

@@ -24,6 +24,10 @@ BERNOULLIS = {"B(0.3)": 0.3, "B(0.7)": 0.7}
 
 
 def normal_pdf(x, mu, sigma):
+    """N(μ, σ) 의 PDF  φ(x) = exp(−(x−μ)²/(2σ²)) / (σ√(2π)).  sigma 는 **표준편차**(NumPy·SciPy scale 관례).
+
+    원문 N(2,0.5) 를 σ=0.5 로 그린다(정점 1/(0.5√(2π)) = 0.797885). 교과서 N(μ,σ²) 관례면 σ=√0.5(정점 0.564190).
+    """
     return np.exp(-0.5 * ((x - mu) / sigma) ** 2) / (sigma * np.sqrt(2 * np.pi))
 
 
@@ -33,11 +37,17 @@ def bernoulli_pmf(p: float) -> np.ndarray:
 
 
 def binomial_pmf(n: int, p: float) -> np.ndarray:
+    """Binomial(n,p): P(k) = C(n,k) p^k (1−p)^(n−k), k=0..n. (베르누이 = n=1 인 특수형 — 대조용)"""
     from math import comb
     return np.array([comb(n, k) * p ** k * (1 - p) ** (n - k) for k in range(n + 1)])
 
 
 def softmax(z: np.ndarray, stable: bool = True) -> np.ndarray:
+    """softmax(z)_c = exp(z_c) / Σ_j exp(z_j).
+
+    stable=True 면 max(z) 를 빼서 계산한다: exp(z_c − m)/Σexp(z_j − m) 는 분자·분모의 e^(−m) 이 약분돼 **수학적으로 같은 값**이고,
+    exp 의 overflow(z×1000 → inf/inf = nan)만 막는다. 출력 합 = 1 (원문 5-3: |합 − 1| ≤ 1e-6).
+    """
     z = np.asarray(z, dtype=float)
     if stable:
         z = z - z.max()
@@ -124,10 +134,10 @@ def main() -> dict:
               "참값대_ fitted_교차엔트로피": round(ce_pop, 6),
               "깁스_성립": bool(ce_pop >= ent - 1e-12),
               "플러그인_편향": f"{nll_n - ent:+.4f}",
-              "해석": f"CE(=BCE) 최소와 MLE 는 같은 p({mle_p:.4f}) 를 고른다(격자 0.001 이내 차이 0). "
+              "해석": f"CE(=BCE) 최소와 MLE 는 같은 p({mle_p:.4f}) 를 고른다(같은 격자 Δp=0.00025 위에서 차이 0). "
                       f"그리고 깁스 부등식은 **참값 기준** CE {ce_pop:.4f} ≥ H {ent:.4f} 로 성립하고, "
                       f"표본 자체의 플러그인 엔트로피({nll_n:.4f})는 {nll_n - ent:+.4f} 만큼 **아래로** 작다 "
-                      "→ '모델 손실이 엔트로피보다 크면 이상하다'는 문장은 표본 기준으로는 틀린다(플러그인 편향)"}
+                      "→ 깁스(CE ≥ H)만 믿고 '학습 손실이 엔트로피보다 **작으면** 이상하다'고 쓰면 표본 기준으로는 틀린다(플러그인 편향). (2026-10-11 정정: 이전 문장은 '크면 이상하다'로 부등호 방향이 거꾸로였다)"}
 
     # ── softmax: 원문 5-3 (합 = 1.0 ± 1e-6) + 수치 안정성 ───────────────────────────────
     z = np.array([1.0, 2.0, 3.0])

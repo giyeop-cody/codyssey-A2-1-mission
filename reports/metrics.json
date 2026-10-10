@@ -2,16 +2,22 @@
   "런": "A2-1 (AI 학습의 수학)",
   "산출_그림": [
     "01_linalg_transforms.png",
+    "01a_rotation.png",
+    "01b_scaling.png",
+    "01c_shear.png",
     "02_svd_compare.png",
+    "02b_svd_spectrum.png",
     "03_gradient_contours.png",
     "04_optimizer_paths.png",
     "05_lr_sweep.png",
     "06_normal_pdf.png",
     "07_bernoulli_pmf.png",
-    "08_power_iteration.png"
+    "08_power_iteration.png",
+    "09_lr_divergence.png",
+    "10_momentum_speed.png"
   ],
   "요약": {
-    "det_면적비_최대상대오차%": "1.333e-09",
+    "det_면적비_최대상대오차%": "4.441e-14",
     "gate_원문1-4(면적비≤1%)": true,
     "power_반복수": [
       105,
@@ -24,17 +30,16 @@
       6
     ],
     "gate_원문1-6(eig비교≤5%)": true,
-    "svd_k50_설명분산": 99.99,
+    "svd_k50_설명분산": 100.0,
     "svd_k50_저장비율": 157.5,
     "gate_원문1-7(그림k)": [
-      1,
       10,
       50,
       100
     ],
     "gate_원문2-1(x=3,≤1e-4)": true,
     "수치미분_x2_오차최대(전h)": "3.646e-08",
-    "등고선_직교_실측최대편차_deg(원문함수)": "0.1878",
+    "등고선_직교_실측최대편차_deg(원문함수)": "0.4513",
     "gate_원문4-2(반경≤0.1)": true,
     "타원_lr0.15_vanilla": "6.428e+61",
     "타원_lr0.15_momentum": "4.973e-03",
