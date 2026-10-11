@@ -1,0 +1,29 @@
+{
+  "mission": "A2-1",
+  "source": {
+    "taskmap_commit": "e032f3468fab2ee1922e7219f8864a3f8c5c1150",
+    "evalmap_commit": "f1bafa175c06d0f1e7bc34ba3de99db3d5cf18f6",
+    "task_sha256": "2705f4baa0d9a6dbca7e1c7e6f9716adb4f63bf3dd37d19adac12e126ec2d567",
+    "evaluation_sha256": "9fbe1f536fb1f779332417d96fd5f99ba272e6e9e7dc25753ecd46f3cb1756bd"
+  },
+  "exact_question_count": 29,
+  "tests": {
+    "mission": "A2-1",
+    "command": "python -m pytest -q",
+    "exit_code": 0,
+    "summary": [
+      "23 passed, 14 warnings in 1.89s"
+    ]
+  },
+  "verification_scope": "23 tests 통과. 수학 실험 전체 러너 및 두 노트북을 새로 실행했다. 노트북 폴더에서도 import/report 경로를 찾도록 수정했고 NumPy 1.26/2.x 적분 API를 지원한다. 원문 lr≥0.5 발산 조건은 x²+y²와 충돌한다: lr=.5는 한 번에 원점으로 수렴하며 안정 조건은 0<lr<1이다. 타원 x²+10y²에서는 .5가 발산한다. 원문 반경 .1과 evalmap 반경1 중 더 엄격한 .1을 따른다. y_true 공란은 기존 y=1 가정으로 실행하며 원문의 빈 값을 확정했다고 주장하지 않는다.",
+  "all_requirements_certified": false,
+  "remaining": [
+    {
+      "mission": "A2-1",
+      "type": "requirement_conflict",
+      "issue": "原문 x²+y²에서 lr≥0.5 발산 요구는 경계 .5를 포함하면 거짓이다. .5는 한 번에 원점으로 수렴, 0<lr<1 안정, 1 왕복, >1 발산이다. y_true는 원문 공란이며 y=0/1 양쪽 계산을 제출했다.",
+      "next": "원문을 수정하지 않고 .5 반례와 >1 발산 예시를 함께 유지한다. 문자 그대로의 전체 충족은 인증하지 않는다."
+    }
+  ],
+  "verification_scope_complete": false
+}

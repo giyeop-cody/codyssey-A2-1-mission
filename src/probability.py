@@ -23,6 +23,13 @@ NORMALS = {"N(0,1)": (0.0, 1.0), "N(2,0.5)": (2.0, 0.5)}
 BERNOULLIS = {"B(0.3)": 0.3, "B(0.7)": 0.7}
 
 
+def integrate(y, x):
+    """Trapezoidal integration compatible with NumPy 1.26 and 2.x."""
+    if hasattr(np, "trapezoid"):
+        return np.trapezoid(y, x)
+    return np.trapz(y, x)
+
+
 def normal_pdf(x, mu, sigma):
     """N(μ, σ) 의 PDF  φ(x) = exp(−(x−μ)²/(2σ²)) / (σ√(2π)).  sigma 는 **표준편차**(NumPy·SciPy scale 관례).
 
@@ -83,8 +90,8 @@ def main() -> dict:
     norm_rows = {}
     trunc = {}
     for label, (mu, s) in NORMALS.items():
-        i8 = float(np.trapezoid(normal_pdf(x, mu, s), x))
-        i40 = float(np.trapezoid(normal_pdf(xw, mu, s), xw))
+        i8 = float(integrate(normal_pdf(x, mu, s), x))
+        i40 = float(integrate(normal_pdf(xw, mu, s), xw))
         norm_rows[label] = {"mu": mu, "sigma": s, "peak": round(float(normal_pdf(mu, mu, s)), 6),
                             "적분[-8,8]": round(i8, 6), "적분[-40,40]": round(i40, 6)}
         trunc[label] = 1.0 - i8

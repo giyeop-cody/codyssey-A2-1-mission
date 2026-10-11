@@ -194,7 +194,8 @@ assert ok1""")
 
 code(r"""# §6. gradcheck — 해석식 자체가 맞는지 손실 함수를 직접 흔들어(중심차분) 확인한다 (해석식과 독립)
 import pathlib, sys
-sys.path.insert(0, str(pathlib.Path.cwd() / 'src'))
+ROOT = next(p for p in [pathlib.Path.cwd(), *pathlib.Path.cwd().parents] if (p / 'src' / 'probability.py').is_file())
+sys.path.insert(0, str(ROOT / 'src'))
 import backprop as B          # 제출 모듈(src/backprop.py) 도 같은 값을 내는지 함께 확인
 
 for y in (1.0, 0.0):

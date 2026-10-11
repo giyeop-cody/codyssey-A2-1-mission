@@ -36,7 +36,7 @@ import numpy as np
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 REP, FIG = ROOT / "reports", ROOT / "figures"
-plt.rcParams["font.family"] = ["Noto Sans CJK JP", "DejaVu Sans"]
+plt.rcParams["font.family"] = ["Arial Unicode MS", "Noto Sans CJK JP", "DejaVu Sans"]
 plt.rcParams["axes.unicode_minus"] = False
 
 

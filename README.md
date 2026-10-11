@@ -152,3 +152,7 @@ reports/    *.json 9종 + analysis.md     figures/ 01·01a–c·02·02b·03–10
 ## 평가 항목 대조 후 개선 (2026-10-11)
 
 구현 보완과 재실행 결과는 [개선 기록](docs/evaluation-improvements.md)에 정리한다. 과제 문항별 답변과 검증 범위를 함께 표시하며, 관측 한계를 성공 수치로 바꾸지 않는다.
+
+## 2026-10-11 원문 재검증
+
+[독립 재검증 기록](docs/independent-reverification.md). 미검증/원문 충돌이 남아 전체 충족 판정과 커밋·푸시는 보류했다.

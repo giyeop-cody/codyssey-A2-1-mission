@@ -42,7 +42,8 @@ md(r"""## §1. 분포 시각화 (원문 5-1 · 5-2)
 code(r"""import numpy as np, json, pathlib, sys
 import matplotlib.pyplot as plt
 from IPython import display as _ipd
-sys.path.insert(0, str(pathlib.Path.cwd() / 'src'))
+ROOT = next(p for p in [pathlib.Path.cwd(), *pathlib.Path.cwd().parents] if (p / 'src' / 'probability.py').is_file())
+sys.path.insert(0, str(ROOT / 'src'))
 import probability as P          # normal_pdf · bernoulli_pmf · softmax · fig_to_png_bytes
 show = lambda fig: _ipd.display(_ipd.Image(data=P.fig_to_png_bytes(fig), format='png'))
 
@@ -53,7 +54,7 @@ for label, (mu, s) in P.NORMALS.items():
 ax.set_title('원문 5-1: 정규분포 PDF — N(0,1) vs N(2,0.5) (둘째 인자 = σ)'); ax.set_xlabel('x'); ax.set_ylabel('확률밀도')
 ax.legend(fontsize=7); ax.grid(alpha=.25); show(fig)
 for label, (mu, s) in P.NORMALS.items():
-    print(f'{label}: σ={s}  peak={P.normal_pdf(mu, mu, s):.6f}  ∫[-4,6]={np.trapezoid(P.normal_pdf(x, mu, s), x):.6f}')""")
+    print(f'{label}: σ={s}  peak={P.normal_pdf(mu, mu, s):.6f}  ∫[-4,6]={P.integrate(P.normal_pdf(x, mu, s), x):.6f}')""")
 
 code(r"""# 대조: N(2, ·) 의 두 해석 — σ=0.5 vs σ²=0.5 (σ≈0.7071)
 fig, ax = plt.subplots(figsize=(6.4, 3.0))
@@ -95,7 +96,7 @@ $$\hat\theta_{MLE} = \arg\max_\theta \log\mathcal L(\theta) = \arg\min_\theta \s
 가정이 깨지면(예: 오차가 라플라스 분포) 같은 논리로 MAE 가 MLE 가 된다. 또 σ 를 함께 추정하면 $\hat\sigma^2 = \text{MSE}(\hat\theta)$ 가 나온다.""")
 
 code(r"""# 수치 확인: 같은 격자(기울기 w, 0.001 간격) 위에서 MSE 최소점 = 정규 로그우도 최대점
-d = json.loads(pathlib.Path('reports/probability.json').read_text(encoding='utf-8'))
+d = json.loads((ROOT / 'reports/probability.json').read_text(encoding='utf-8'))
 print(json.dumps(d['MSE_MLE_동치'], ensure_ascii=False, indent=1))""")
 
 md(r"""## §3. Cross-Entropy 최소화 = 베르누이 / 카테고리 분포 가정 하의 MLE (원문 5-5)
