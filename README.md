@@ -147,3 +147,8 @@ notebooks/  backprop_derivation · probability_loss(그림 4장 embed)
 assets/     grace_hopper_64.png (SVD 입력, 퍼블릭 도메인)
 reports/    *.json 9종 + analysis.md     figures/ 01·01a–c·02·02b·03–10 (14장)     docs/ learning-map · probability_loss · y_true-definition
 ```
+
+
+## 평가 항목 대조 후 개선 (2026-10-11)
+
+구현 보완과 재실행 결과는 [개선 기록](docs/evaluation-improvements.md)에 정리한다. 과제 문항별 답변과 검증 범위를 함께 표시하며, 관측 한계를 성공 수치로 바꾸지 않는다.
