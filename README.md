@@ -39,16 +39,25 @@ AI 학습의 다섯 가지 수학 기둥 — **선형대수·미적분·역전�
 
 ## 실행
 
+macOS Homebrew Python 은 PEP 668 때문에 시스템 `pip` 을 막는다(`externally-managed-environment`).
+**반드시 가상환경(venv) 안에서** 설치·실행한다. `--break-system-packages` 는 Homebrew 를 깨뜨릴 수 있어 쓰지 않는다.
+
 ```bash
-pip install -r requirements.txt          # numpy · matplotlib · pytest · nbformat · nbclient · ipykernel
-python scripts/run_all.py                # src 를 돌려 reports/*.json · analysis.md · 그림 14장 생성
-python scripts/build_notebook.py         # 노트북 2종을 **실행해서** outputs(그림 포함)와 함께 저장 (run_all 다음에 실행)
-python scripts/record_gates.py           # 게이트 G1~G4 판정 → reports/gates.json
-python scripts/check_requirements.py     # 자가채점 [원문] 52 + [자체] 50 = 102건 (미달 시 exit 1)
-python -m pytest -q                      # 23개 — 커밋된 산출물을 그대로 검증
-MISSION_STRICT=1 python -m pytest -q     # 제출 직전: skip 도 실패로 본다
-MISSION_BOOTSTRAP=1 python -m pytest -q  # 코드 수정 후: 산출물을 재생성해서 검증
+python3 -m venv .venv                    # 최초 1회, Python 3.11–3.12 권장
+.venv/bin/python -m pip install --upgrade pip
+.venv/bin/python -m pip install -r requirements.txt
+.venv/bin/python scripts/run_all.py      # src 를 돌려 reports/*.json · analysis.md · 그림 14장 생성
+.venv/bin/python scripts/build_notebook.py  # 노트북 2종을 **실행해서** outputs(그림 포함)와 함께 저장 (run_all 다음에 실행)
+.venv/bin/python scripts/record_gates.py   # 게이트 G1~G4 판정 → reports/gates.json
+.venv/bin/python scripts/check_requirements.py  # 자가채점 [원문] 52 + [자체] 50 = 102건 (미달 시 exit 1)
+.venv/bin/python -m pytest -q            # 23개 — 커밋된 산출물을 그대로 검증
+MISSION_STRICT=1 .venv/bin/python -m pytest -q     # 제출 직전: skip 도 실패로 본다
+MISSION_BOOTSTRAP=1 .venv/bin/python -m pytest -q  # 코드 수정 후: 산출물을 재생성해서 검증
 ```
+
+`source .venv/bin/activate` 로 활성화한 뒤 `python`/`pip` 을 써도 되지만, alias·pyenv shim·hash 캐시가 시스템 Python 을 가리킬 수 있어 **`.venv/bin/python` 을 직접 쓰는 편이 안전하다**. Windows 는 `.venv\Scripts\python.exe` 가 같은 역할이다.
+
+한글 폰트는 `src/_common.py` 가 **설치된 폰트만** 후보로 남긴다 — macOS: Arial Unicode MS / Apple SD Gothic Neo, Windows: Malgun Gothic, Linux: Noto CJK KR. 없는 폰트를 찾느라 `findfont` 경고가 반복되지 않는다.
 
 재현 확인(2026-10-11): 새 venv(`python3 -m venv` → `pip install -r requirements.txt`)에서 위 순서 전체 실행 → 자가채점 102/102,
 pytest 23 passed(기본·STRICT). 리포트 JSON·analysis.md·역전파 노트북은 커밋본과 바이트 동일(완전 복원 잔차 1e-26~1e-25 의 BLAS 잡음은 0 으로 절삭해 기록). 확률 노트북(텍스트 출력 동일)과 `figures/*.png` 는 PNG 바이트만 matplotlib 버전(3.10 vs 3.11)에 따라 다르다.
