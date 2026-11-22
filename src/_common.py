@@ -14,6 +14,7 @@ except NameError:
 if _ip is None:
     matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+from matplotlib import font_manager
 
 
 def fig_to_png_bytes(fig) -> bytes:
@@ -36,7 +37,20 @@ import numpy as np
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 REP, FIG = ROOT / "reports", ROOT / "figures"
-plt.rcParams["font.family"] = ["Arial Unicode MS", "Noto Sans CJK JP", "DejaVu Sans"]
+
+# 설치된 폰트만 남긴다 — 목록에 없는 폰트가 있으면 텍스트 객체마다 findfont 경고가 반복된다.
+# macOS: Arial Unicode MS / Apple SD Gothic Neo · Windows: Malgun Gothic · Linux: Noto CJK.
+# 후보 중 하나라도 있으면 그것만 쓰고, 전부 없으면 DejaVu Sans 로 떨어진다(한글은 네모로 보일 수 있다).
+_FONT_CANDIDATES = (
+    "Arial Unicode MS",
+    "Apple SD Gothic Neo",
+    "Malgun Gothic",
+    "Noto Sans CJK KR",
+    "Noto Sans CJK JP",
+    "DejaVu Sans",
+)
+_installed_fonts = {f.name for f in font_manager.fontManager.ttflist}
+plt.rcParams["font.family"] = [name for name in _FONT_CANDIDATES if name in _installed_fonts] or ["DejaVu Sans"]
 plt.rcParams["axes.unicode_minus"] = False
 
 
